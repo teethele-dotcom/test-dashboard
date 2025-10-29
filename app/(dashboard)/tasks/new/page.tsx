@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ChevronRight, Check } from 'lucide-react';
+import MobilePreview from '@/components/MobilePreview';
 
 const steps = ['基本信息', '预算与奖励', '审核要求'];
 
@@ -782,85 +783,20 @@ export default function NewTaskPage(): React.ReactElement {
         </div>
 
         {/* 移动端预览区域 - 固定宽度 */}
-        <div className="w-64 sticky top-0">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-900">📱 移动端预览</CardTitle>
-              <CardDescription className="text-sm text-gray-600">实时查看移动端展示效果</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 overflow-y-auto max-h-[calc(100vh-380px)]">
-              {/* 简洁的移动端卡片预览 - 展示任务卡片本身 */}
-              <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-lg mx-auto max-w-xs">
-                {/* 任务类型标识 */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ${
-                    formData.taskType === '原创任务'
-                      ? 'bg-blue-500'
-                      : 'bg-green-500'
-                  }`}>
-                    {formData.taskType === '原创任务' ? '🎯' : '✅'}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 leading-tight line-clamp-2">
-                      {formData.taskName || '精彩任务'}
-                    </h3>
-                  </div>
-                </div>
+        <div className="w-72 sticky top-0">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">📱 移动端预览</h3>
+              <p className="text-sm text-gray-600">实时查看移动端展示效果</p>
+            </div>
 
-                {/* 任务奖励 - 突出显示 */}
-                {formData.pointsBudget && (
-                  <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white text-center py-2 px-4 rounded-lg mb-4 shadow-md">
-                    <span className="font-bold text-lg">💰 {formData.pointsBudget} 积分奖励</span>
-                  </div>
-                )}
+            {/* Enhanced Mobile Preview Component */}
+            <MobilePreview formData={formData} />
 
-                {/* 任务基本信息 */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">主题:</span>
-                    <span className="font-medium">{formData.taskTheme || '未选择'}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">平台:</span>
-                    <span className="font-medium">{formData.taskPlatform || '未选择'}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">周期:</span>
-                    <span className="font-medium">{formData.taskCycle || '未设置'}</span>
-                  </div>
-                  {formData.totalTasks && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">任务数量:</span>
-                      <span className="font-medium text-blue-600">{formData.totalTasks} 份</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* 任务描述 */}
-                <div className="mb-4">
-                  <p className="text-gray-700 text-sm line-clamp-3 leading-relaxed">
-                    {formData.ruleDescription ?
-                      formData.ruleDescription.substring(0, 100) + '...' :
-                      '任务详细说明将在这里显示，让参与者清楚了解具体要求和工作内容...'}
-                  </p>
-                </div>
-
-                {/* 模拟的移动端按钮样式 */}
-                <div className="space-y-3">
-                  <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-sm transition-all shadow-md">
-                    🚀 立即参与
-                  </button>
-                  <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
-                    📖 查看详情
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-xs text-center text-muted-foreground mt-4">
-                ✏️ 填写表单可实时预览效果
-              </div>
-            </CardContent>
-          </Card>
+            <div className="text-xs text-center text-muted-foreground">
+              ✏️ 填写表单可实时预览效果
+            </div>
+          </div>
         </div>
       </div>
 
