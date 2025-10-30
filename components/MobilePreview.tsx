@@ -119,9 +119,9 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
           {/* Platform Icon and Task Type */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm">
+              <div className="flex items-center justify-center">
                 {React.createElement(getPlatformIcon(formData.taskPlatform), {
-                  size: 16,
+                  size: 20,
                   color: '#6b7280'
                 })}
               </div>
