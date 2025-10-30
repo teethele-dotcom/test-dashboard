@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MdSmartphone, MdWeb, MdApps, MdOutlinePlayArrow, MdPalette, MdCheckCircle, MdBusinessCenter, MdQuestionAnswer,
-         MdArrowBack, MdShare, MdTask, MdGroup, MdDateRange } from 'react-icons/md';
+         MdArrowBack, MdShare, MdTask, MdGroup, MdDateRange, MdLibraryBooks, MdAttachFile, MdEmojiObjects, MdWarning,
+         MdPhotoCamera, MdAccessTime, MdEmojiEvents, MdFolder, MdRocket } from 'react-icons/md';
 import { FaFire, FaWeixin, FaTiktok, FaWeibo } from 'react-icons/fa';
 
 interface MobilePreviewProps {
@@ -41,13 +42,13 @@ const getPlatformIcon = (platform: string) => {
 };
 
 const getTypeIcon = (type: string) => {
-  const icons: { [key: string]: string } = {
-    '原创任务': '🎨',
-    '验证任务': '✅',
-    '调研任务': '📊',
-    '互动任务': '🤝',
+  const icons = {
+    '原创任务': MdPalette,
+    '验证任务': MdCheckCircle,
+    '调研任务': MdBusinessCenter,
+    '互动任务': MdQuestionAnswer,
   };
-  return icons[type] || '📋';
+  return icons[type as keyof typeof icons] || MdPalette;
 };
 
 const formatDate = (dateString: string) => {
@@ -84,7 +85,7 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
             />
           ) : (
             <div className="flex items-center justify-center">
-              <div className="text-white text-4xl opacity-50">📷</div>
+              <MdPhotoCamera className="text-white text-4xl opacity-50" />
             </div>
           )}
           {/* Overlay for better text readability */}
@@ -131,8 +132,9 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
             </div>
 
             {/* Deadline */}
-            <div className="text-xs text-gray-500">
-              ⏰ 截止 {formatDate(formData.claimEndTime) || '待定'}
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <MdAccessTime size={12} />
+              <span>截止 {formatDate(formData.claimEndTime) || '待定'}</span>
             </div>
           </div>
 
@@ -190,7 +192,10 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
               <div className="bg-blue-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg">
-                    {getTypeIcon(formData.taskType)}
+                    {React.createElement(getTypeIcon(formData.taskType), {
+                      size: 24,
+                      color: 'white'
+                    })}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-blue-900">
@@ -215,8 +220,9 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
                     <p className="text-lg font-semibold">+{formData.basicRewardPoints || '0'}</p>
                   </div>
                 </div>
-                <div className="mt-2 text-xs opacity-90">
-                  🎯 完成任务即可获得，优质作品可额外奖励
+                <div className="mt-2 text-xs opacity-90 flex items-center gap-1">
+                  <MdEmojiEvents size={12} />
+                  <span>完成任务即可获得，优质作品可额外奖励</span>
                 </div>
               </div>
 
@@ -251,8 +257,9 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
 
               {/* Action Button */}
               <div className="pb-4">
-                <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-sm transition-all shadow-md">
-                  🚀 立即参与 ({formData.totalTasks && `${formData.totalTasks}份任务`})
+                <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-sm transition-all shadow-md flex items-center justify-center gap-2">
+                  <MdRocket size={16} />
+                  <span>立即参与 ({formData.totalTasks && `${formData.totalTasks}份任务`})</span>
                 </button>
               </div>
             </TabsContent>
@@ -262,7 +269,7 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                    📚
+                    <MdLibraryBooks size={16} />
                   </div>
                   <h3 className="font-medium">任务素材</h3>
                 </div>
@@ -275,7 +282,7 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
                   </div>
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <div className="text-3xl mb-2">📁</div>
+                    <MdFolder className="text-3xl mb-2 text-gray-400 mx-auto" />
                     <p className="text-sm text-gray-500">暂无任务素材</p>
                     <p className="text-xs text-gray-400 mt-1">请在表单中添加素材说明</p>
                   </div>
@@ -284,10 +291,12 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
                 {/* Suggested Actions */}
                 <div className="space-y-2">
                   <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <span>📎</span> 查看附件资料
+                    <MdAttachFile size={16} />
+                    <span>查看附件资料</span>
                   </button>
                   <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <span>🎯</span> 参考示例作品
+                    <MdEmojiObjects size={16} />
+                    <span>参考示例作品</span>
                   </button>
                 </div>
               </div>
@@ -298,7 +307,7 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
-                    ⚠️
+                    <MdWarning size={16} />
                   </div>
                   <h3 className="font-medium">重要声明</h3>
                 </div>
