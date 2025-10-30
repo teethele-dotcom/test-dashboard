@@ -63,7 +63,7 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
   const [activeTab, setActiveTab] = useState('activity');
 
   return (
-    <div className="bg-white border-2 border-gray-300 rounded-[2rem] overflow-hidden shadow-2xl mx-auto max-w-xs h-[600px] flex flex-col">
+    <div className="bg-white border-2 border-gray-300 rounded-[2rem] overflow-hidden shadow-2xl mx-auto w-80 h-[600px] flex flex-col">
       {/* Mobile Header - 模拟手机状态栏 */}
       <div className="h-6 bg-black flex items-center justify-center relative">
         <div className="text-white text-xs">9:41</div>
