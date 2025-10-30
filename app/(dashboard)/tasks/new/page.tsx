@@ -196,10 +196,9 @@ export default function NewTaskPage(): React.ReactElement {
                     className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">选择平台</option>
-                    <option value="微信小程序">微信小程序</option>
-                    <option value="H5页面">H5页面</option>
-                    <option value="Web应用">Web应用</option>
-                    <option value="APP">APP</option>
+                    <option value="微信">微信</option>
+                    <option value="抖音">抖音</option>
+                    <option value="微博">微博</option>
                   </select>
                 </div>
               </div>

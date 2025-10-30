@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MdSmartphone, MdWeb, MdApps, MdOutlinePlayArrow, MdPalette, MdCheckCircle, MdBusinessCenter, MdQuestionAnswer,
          MdArrowBack, MdShare, MdTask, MdGroup, MdDateRange } from 'react-icons/md';
-import { FaFire } from 'react-icons/fa';
+import { FaFire, FaWeixin, FaTiktok, FaWeibo } from 'react-icons/fa';
 
 interface MobilePreviewProps {
   formData: {
@@ -33,13 +33,11 @@ interface MobilePreviewProps {
 
 const getPlatformIcon = (platform: string) => {
   const icons = {
-    '微信小程序': MdSmartphone,
-    'H5页面': MdWeb,
-    'Web应用': MdApps,
-    'APP': MdSmartphone,
-    '抖音': MdOutlinePlayArrow,
+    '微信': FaWeixin,
+    '抖音': FaTiktok,
+    '微博': FaWeibo,
   };
-  return icons[platform as keyof typeof icons] || MdSmartphone;
+  return icons[platform as keyof typeof icons] || FaWeixin;
 };
 
 const getTypeIcon = (type: string) => {
