@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { MdSmartphone, MdWeb, MdApps, MdOutlinePlayArrow, MdPalette, MdCheckCircle, MdBusinessCenter, MdQuestionAnswer,
+         MdArrowBack, MdShare, MdTask, MdGroup, MdDateRange } from 'react-icons/md';
+import { FaFire } from 'react-icons/fa';
 
 interface MobilePreviewProps {
   formData: {
@@ -29,14 +32,14 @@ interface MobilePreviewProps {
 }
 
 const getPlatformIcon = (platform: string) => {
-  const icons: { [key: string]: string } = {
-    '微信小程序': '📱',
-    'H5页面': '🌐',
-    'Web应用': '💻',
-    'APP': '📱',
-    '抖音': '🎬',
+  const icons = {
+    '微信小程序': MdSmartphone,
+    'H5页面': MdWeb,
+    'Web应用': MdApps,
+    'APP': MdSmartphone,
+    '抖音': MdOutlinePlayArrow,
   };
-  return icons[platform] || '📱';
+  return icons[platform as keyof typeof icons] || MdSmartphone;
 };
 
 const getTypeIcon = (type: string) => {
@@ -119,7 +122,10 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm">
-                {getPlatformIcon(formData.taskPlatform)}
+                {React.createElement(getPlatformIcon(formData.taskPlatform), {
+                  size: 16,
+                  color: '#6b7280'
+                })}
               </div>
               <Badge variant="secondary" className="text-xs px-2 py-1">
                 原创任务
