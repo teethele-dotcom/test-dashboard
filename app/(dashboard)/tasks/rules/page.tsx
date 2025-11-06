@@ -1,0 +1,897 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles } from 'lucide-react';
+
+interface TriggerAction {
+  id: string;
+  type: 'comment' | 'reply' | 'like' | 'complain' | 'follow' | 'share' | 'collect';
+  count: number; // 执行次数
+  frequency?: number; // 执行频率（每N条指标执行一次）
+  content?: string; // 评论内容（可选）
+}
+
+interface TriggerRule {
+  id: string;
+  // 基本信息
+  name: string;
+  // 触发条件
+  platform: string; // 阵地
+  sentiment: 'positive' | 'negative' | 'neutral'; // 情感倾向
+  isMainPost: boolean; // 是否主帖
+  mainPostSource: string; // 主帖来源
+  publishTimeDays: number; // 发表时间（天内）
+  checkFrequencyHours: number; // 巡查频率（小时）
+  // 触发设置
+  metric: 'comments' | 'likes' | 'shares' | 'hot'; // 监控指标
+  triggerInterval: number; // 触发间隔（每N条）
+  // 执行动作列表
+  actions: TriggerAction[];
+  isActive: boolean;
+}
+
+export default function TaskRulesPage() {
+  const [rules, setRules] = useState<TriggerRule[]>([
+    {
+      id: '1',
+      name: '评论点赞规则',
+      platform: '微信公众号',
+      sentiment: 'positive',
+      isMainPost: true,
+      mainPostSource: '官方账号',
+      publishTimeDays: 7,
+      checkFrequencyHours: 2,
+      metric: 'comments',
+      triggerInterval: 5,
+      actions: [
+        { id: '1', type: 'like', count: 2, frequency: 1, content: '' },
+        { id: '2', type: 'comment', count: 1, frequency: 1, content: '感谢支持！' }
+      ],
+      isActive: true
+    },
+    {
+      id: '2',
+      name: '点赞关注规则',
+      platform: '微博',
+      sentiment: 'neutral',
+      isMainPost: false,
+      mainPostSource: '用户投稿',
+      publishTimeDays: 3,
+      checkFrequencyHours: 1,
+      metric: 'likes',
+      triggerInterval: 10,
+      actions: [
+        { id: '1', type: 'follow', count: 1, frequency: 1, content: '' },
+        { id: '2', type: 'share', count: 1, frequency: 1, content: '' }
+      ],
+      isActive: false
+    }
+  ]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<TriggerRule | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    platform: '',
+    sentiment: 'neutral' as TriggerRule['sentiment'],
+    isMainPost: true,
+    mainPostSource: '',
+    publishTimeDays: 7,
+    checkFrequencyHours: 2,
+    metric: 'comments' as TriggerRule['metric'],
+    actions: [] as TriggerAction[]
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState(false);
+
+  const metrics = [
+    { value: 'comments', label: '评论数', icon: MessageCircle, color: 'bg-blue-100 text-blue-800' },
+    { value: 'likes', label: '点赞数', icon: Heart, color: 'bg-red-100 text-red-800' },
+    { value: 'shares', label: '转发数', icon: Repeat2, color: 'bg-green-100 text-green-800' },
+    { value: 'hot', label: '热度值', icon: Flame, color: 'bg-orange-100 text-orange-800' }
+  ];
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 验证表单
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newErrors.name = '规则名称不能为空';
+    }
+    if (!formData.platform) {
+      newErrors.platform = '请选择监控阵地';
+    }
+    if (!formData.metric) {
+      newErrors.metric = '请选择监控指标';
+    }
+    if (formData.actions.length === 0) {
+      newErrors.actions = '请至少启用一个执行动作';
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    const newRule: TriggerRule = {
+      id: editingRule?.id || Date.now().toString(),
+      name: formData.name,
+      platform: formData.platform,
+      sentiment: formData.sentiment,
+      isMainPost: formData.isMainPost,
+      mainPostSource: formData.mainPostSource,
+      publishTimeDays: formData.publishTimeDays,
+      checkFrequencyHours: formData.checkFrequencyHours,
+      metric: formData.metric,
+      triggerInterval: 1, // 移除triggerInterval，使用每个动作的frequency
+      actions: formData.actions,
+      isActive: editingRule?.isActive ?? true
+    };
+
+    if (editingRule) {
+      setRules(rules.map(rule => rule.id === editingRule.id ? newRule : rule));
+    } else {
+      setRules([...rules, newRule]);
+    }
+
+    setShowForm(false);
+    setEditingRule(null);
+    resetForm();
+  };
+
+  const handleEdit = (rule: TriggerRule) => {
+    setEditingRule(rule);
+    setFormData({
+      name: rule.name,
+      platform: rule.platform,
+      sentiment: rule.sentiment,
+      isMainPost: rule.isMainPost,
+      mainPostSource: rule.mainPostSource,
+      publishTimeDays: rule.publishTimeDays,
+      checkFrequencyHours: rule.checkFrequencyHours,
+      metric: rule.metric,
+      actions: rule.actions
+    });
+    setShowForm(true);
+  };
+
+  const addAction = () => {
+    const newAction: TriggerAction = {
+      id: Date.now().toString(),
+      type: 'comment',
+      count: 1,
+      frequency: 1,
+      content: ''
+    };
+    setFormData({ ...formData, actions: [...formData.actions, newAction] });
+  };
+
+  const removeAction = (actionId: string) => {
+    setFormData({
+      ...formData,
+      actions: formData.actions.filter(a => a.id !== actionId)
+    });
+  };
+
+  const updateAction = (actionId: string, updates: Partial<TriggerAction>) => {
+    setFormData({
+      ...formData,
+      actions: formData.actions.map(a =>
+        a.id === actionId ? { ...a, ...updates } : a
+      )
+    });
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      platform: '',
+      sentiment: 'neutral',
+      isMainPost: true,
+      mainPostSource: '',
+      publishTimeDays: 7,
+      checkFrequencyHours: 2,
+      metric: 'comments',
+      actions: []
+    });
+    setErrors({});
+    setShowPreview(false);
+  };
+
+
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('确定要删除这个触发规则吗？')) {
+      setRules(rules.filter(rule => rule.id !== id));
+    }
+  };
+
+  const toggleStatus = (id: string) => {
+    setRules(rules.map(rule =>
+      rule.id === id ? { ...rule, isActive: !rule.isActive } : rule
+    ));
+  };
+
+  const getMetricInfo = (metric: string) => {
+    return metrics.find(m => m.value === metric) || metrics[0];
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="container mx-auto px-6 py-8">
+        {/* 页面标题区域 */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+            <Zap className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            智能触发规则
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            打造您的自动化监控帝国，让数据为您工作
+          </p>
+        </div>
+
+        {/* 统计卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">活跃规则</p>
+                <p className="text-3xl font-bold text-green-600">{rules.filter(r => r.isActive).length}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Heart className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">监控指标</p>
+                <p className="text-3xl font-bold text-blue-600">{metrics.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <MessageCircle className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">总规则数</p>
+                <p className="text-3xl font-bold text-purple-600">{rules.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Repeat2 className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">今日触发</p>
+                <p className="text-3xl font-bold text-orange-600">12</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <Flame className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 规则列表 */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">规则管理中心</h2>
+                <p className="text-gray-600 mt-1">智能监控，自动化执行</p>
+              </div>
+              <Button
+                onClick={() => {
+                  setEditingRule(null);
+                  resetForm();
+                  setShowForm(true);
+                }}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                创建新规则
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {rules.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Zap className="h-12 w-12 text-blue-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">还没有规则</h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  创建您的第一个智能触发规则，让自动化监控开始工作
+                </p>
+                <Button
+                  onClick={() => {
+                    setEditingRule(null);
+                    resetForm();
+                    setShowForm(true);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  开始创建
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {rules.map((rule, index) => {
+                  const metricInfo = getMetricInfo(rule.metric);
+                  return (
+                    <div key={rule.id} className="group bg-gradient-to-r from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <metricInfo.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="text-xl font-bold text-gray-900">{rule.name}</h4>
+                              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                rule.isActive
+                                  ? 'bg-green-100 text-green-800 border border-green-200'
+                                  : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              }`}>
+                                {rule.isActive ? '● 运行中' : '○ 已停止'}
+                              </div>
+                            </div>
+                            <p className="text-gray-600 mb-3">
+                              每 <span className="font-bold text-purple-600">{rule.triggerInterval}</span> 条{' '}
+                              <span className="font-semibold text-blue-600">{metricInfo.label}</span> 时，执行{' '}
+                              <span className="font-semibold text-green-600">{rule.actions.length}</span> 个动作
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                {rule.platform}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                {rule.sentiment === 'positive' ? '正面' : rule.sentiment === 'negative' ? '负面' : '中性'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                {rule.publishTimeDays}天内
+                              </span>
+                            </div>
+                            {/* 显示执行动作摘要 */}
+                            <div className="mt-3 space-y-1">
+                              {rule.actions.slice(0, 2).map((action, idx) => (
+                                <div key={action.id} className="text-xs text-gray-500 flex items-center gap-2">
+                                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                                  {action.type === 'comment' ? '💬 评论' :
+                                   action.type === 'reply' ? '↩️ 回复' :
+                                   action.type === 'like' ? '❤️ 点赞' :
+                                   action.type === 'follow' ? '👤 关注' :
+                                   action.type === 'share' ? '🔗 分享' :
+                                   action.type === 'collect' ? '⭐ 收藏' : '⚠️ 投诉'} × {action.count}
+                                  {action.content && ` (${action.content.slice(0, 10)}...)`}
+                                </div>
+                              ))}
+                              {rule.actions.length > 2 && (
+                                <div className="text-xs text-gray-400">
+                                  ... 还有 {rule.actions.length - 2} 个动作
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleStatus(rule.id)}
+                            className={`border-2 transition-all duration-300 ${
+                              rule.isActive
+                                ? 'border-green-200 text-green-700 hover:bg-green-50'
+                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            {rule.isActive ? '暂停' : '启动'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(rule)}
+                            className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(rule.id)}
+                            className="border-red-200 text-red-600 hover:bg-red-50 transition-all duration-300"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 创建规则表单 */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="p-8 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Settings className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {editingRule ? '编辑触发规则' : '创建智能触发规则'}
+                    </h2>
+                    <p className="text-gray-600">配置您的自动化监控规则</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingRule(null);
+                    resetForm();
+                  }}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleFormSubmit} className="p-8">
+              {/* 规则名称 - 第一行横铺 */}
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 rounded-2xl p-6 border border-purple-200 shadow-lg">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white font-bold text-xl">📋</span>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">规则名称</h3>
+                      <p className="text-sm text-gray-600">为您的自动化规则起一个响亮的名字</p>
+                    </div>
+                  </div>
+                  <div className="max-w-2xl">
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="例如：微信公众号评论自动回复规则"
+                      className="h-12 text-lg border-2 border-purple-300 focus:border-purple-500 rounded-xl shadow-sm bg-white/80 backdrop-blur-sm"
+                      required
+                    />
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-3 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 左侧：触发规则配置 */}
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Zap className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">触发规则配置</h3>
+                        <p className="text-sm text-gray-600">设置监控条件和触发逻辑</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+
+                      {/* 阵地选择 */}
+                      <div>
+                        <Label htmlFor="platform" className="text-sm font-semibold text-gray-700 mb-3 block">
+                          监控阵地 <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={formData.platform}
+                          onValueChange={(value: string) => setFormData({ ...formData, platform: value })}
+                        >
+                          <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl">
+                            <SelectValue placeholder="选择监控阵地" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="微信公众号">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">微</span>
+                                </div>
+                                微信公众号
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="微博">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">微</span>
+                                </div>
+                                微博
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="抖音">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">抖</span>
+                                </div>
+                                抖音
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="快手">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">快</span>
+                                </div>
+                                快手
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="B站">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">B</span>
+                                </div>
+                                B站
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.platform && (
+                          <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.platform}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 监控指标 */}
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-4 block">
+                          监控指标 <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {metrics.map((metric) => (
+                            <button
+                              key={metric.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, metric: metric.value as TriggerRule['metric'] })}
+                              className={`p-4 border-2 rounded-xl transition-all duration-300 text-left ${
+                                formData.metric === metric.value
+                                  ? 'border-blue-500 bg-blue-50 shadow-md'
+                                  : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <metric.icon className="h-6 w-6 text-gray-600" />
+                                <div>
+                                  <p className="font-medium text-gray-900 text-sm">{metric.label}</p>
+                                  <p className="text-xs text-gray-600">
+                                    {metric.value === 'comments' && '监控评论变化'}
+                                    {metric.value === 'likes' && '监控点赞变化'}
+                                    {metric.value === 'shares' && '监控转发变化'}
+                                    {metric.value === 'hot' && '监控热度变化'}
+                                  </p>
+                                </div>
+                                {formData.metric === metric.value && (
+                                  <div className="ml-auto">
+                                    <CheckCircle className="h-5 w-5 text-blue-500" />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        {errors.metric && (
+                          <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.metric}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 触发条件 */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="sentiment" className="text-sm font-semibold text-gray-700 mb-2 block">
+                            情感倾向
+                          </Label>
+                          <Select
+                            value={formData.sentiment}
+                            onValueChange={(value: TriggerRule['sentiment']) =>
+                              setFormData({ ...formData, sentiment: value })
+                            }
+                          >
+                            <SelectTrigger className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="positive">😊 正面</SelectItem>
+                              <SelectItem value="negative">😠 负面</SelectItem>
+                              <SelectItem value="neutral">😐 中性</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="isMainPost" className="text-sm font-semibold text-gray-700 mb-2 block">
+                            是否主帖
+                          </Label>
+                          <Select
+                            value={formData.isMainPost.toString()}
+                            onValueChange={(value: string) => setFormData({ ...formData, isMainPost: value === 'true' })}
+                          >
+                            <SelectTrigger className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">✅ 是</SelectItem>
+                              <SelectItem value="false">❌ 否</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="mainPostSource" className="text-sm font-semibold text-gray-700 mb-2 block">
+                          主帖来源
+                        </Label>
+                        <Select
+                          value={formData.mainPostSource}
+                          onValueChange={(value: string) => setFormData({ ...formData, mainPostSource: value })}
+                        >
+                          <SelectTrigger className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg">
+                            <SelectValue placeholder="选择主帖来源" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="官方账号">🏢 官方账号</SelectItem>
+                            <SelectItem value="用户投稿">👤 用户投稿</SelectItem>
+                            <SelectItem value="品牌合作">🤝 品牌合作</SelectItem>
+                            <SelectItem value="营销活动">📢 营销活动</SelectItem>
+                            <SelectItem value="其他">📄 其他</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="publishTimeDays" className="text-sm font-semibold text-gray-700 mb-2 block">
+                            发表时间范围
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="publishTimeDays"
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={formData.publishTimeDays}
+                              onChange={(e) => setFormData({ ...formData, publishTimeDays: parseInt(e.target.value) || 7 })}
+                              className="h-10 w-16 border-2 border-gray-200 focus:border-blue-500 rounded-lg text-center text-sm font-bold"
+                            />
+                            <span className="text-sm text-gray-600 font-medium">天内</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">📅 范围：1-30天</p>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="checkFrequencyHours" className="text-sm font-semibold text-gray-700 mb-2 block">
+                            巡查频率
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="checkFrequencyHours"
+                              type="number"
+                              min="1"
+                              max="24"
+                              value={formData.checkFrequencyHours}
+                              onChange={(e) => setFormData({ ...formData, checkFrequencyHours: parseInt(e.target.value) || 2 })}
+                              className="h-10 w-16 border-2 border-gray-200 focus:border-blue-500 rounded-lg text-center text-sm font-bold"
+                            />
+                            <span className="text-sm text-gray-600 font-medium">小时</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">⏰ 范围：1-24小时</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 右侧：执行动作配置 */}
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Play className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">执行动作配置</h3>
+                        <p className="text-sm text-gray-600">设置自动化执行的动作序列</p>
+                      </div>
+                    </div>
+
+                    {/* 动作列表 */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-gray-700">执行动作</h4>
+                        <Button
+                          type="button"
+                          onClick={addAction}
+                          size="sm"
+                          className="bg-orange-500 hover:bg-orange-600 text-white"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          添加动作
+                        </Button>
+                      </div>
+
+                      {formData.actions.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                          <Sparkles className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm font-medium">还没有配置执行动作</p>
+                          <p className="text-xs mt-2">点击上方按钮添加动作</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                          {formData.actions.map((action, index) => (
+                            <div key={action.id} className="bg-white/60 rounded-xl p-5 border border-gray-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    动作 {index + 1}
+                                  </span>
+                                  <Select
+                                    value={action.type}
+                                    onValueChange={(value: TriggerAction['type']) =>
+                                      updateAction(action.id, { type: value })
+                                    }
+                                  >
+                                    <SelectTrigger className="w-32 h-8 border-2 border-orange-200 focus:border-orange-500 rounded-lg">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="comment">💬 评论</SelectItem>
+                                      <SelectItem value="reply">↩️ 回复</SelectItem>
+                                      <SelectItem value="like">❤️ 点赞</SelectItem>
+                                      <SelectItem value="follow">👤 关注</SelectItem>
+                                      <SelectItem value="share">🔗 分享</SelectItem>
+                                      <SelectItem value="collect">⭐ 收藏</SelectItem>
+                                      <SelectItem value="complain">⚠️ 投诉</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeAction(action.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <Label className="text-xs text-gray-600 mb-2 block font-medium">每几条执行</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={action.frequency}
+                                    onChange={(e) => updateAction(action.id, {
+                                      frequency: parseInt(e.target.value) || 1
+                                    })}
+                                    className="h-9 text-sm text-center border-2 border-gray-200 focus:border-orange-500 rounded-lg"
+                                    placeholder="1"
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">每增加N条指标就执行一次</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600 mb-2 block font-medium">执行次数</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    value={action.count}
+                                    onChange={(e) => updateAction(action.id, {
+                                      count: parseInt(e.target.value) || 1
+                                    })}
+                                    className="h-9 text-sm text-center border-2 border-gray-200 focus:border-orange-500 rounded-lg"
+                                    placeholder="1"
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">每次执行次数</p>
+                                </div>
+                              </div>
+
+                              {action.type === 'reply' && (
+                                <div>
+                                  <Label className="text-xs text-gray-600 mb-2 block font-medium">回复内容</Label>
+                                  <Input
+                                    value={action.content}
+                                    onChange={(e) => updateAction(action.id, {
+                                      content: e.target.value
+                                    })}
+                                    placeholder="输入回复内容..."
+                                    className="h-9 text-sm border-2 border-gray-200 focus:border-orange-500 rounded-lg"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {errors.actions && (
+                        <p className="text-red-500 text-sm mt-3 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.actions}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+
+              {/* 底部操作按钮 */}
+              <div className="flex justify-end gap-4 pt-8 border-t border-gray-100 mt-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingRule(null);
+                    resetForm();
+                  }}
+                  className="px-8 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300"
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  <Save className="h-5 w-5 mr-2" />
+                  {editingRule ? '更新规则' : '创建规则'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
