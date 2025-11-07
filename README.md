@@ -8,7 +8,7 @@
 <span>
 </div>
 
-## Overview
+
 
 This is a starter template using the following stack:
 
