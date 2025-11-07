@@ -135,9 +135,16 @@ export default function TaskRulesPage() {
       return;
     }
 
+    const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const currentUser = '蔡纤'; // 临时使用固定用户，实际应该从认证系统中获取
+
     const newRule: TriggerRule = {
       id: editingRule?.id || Date.now().toString(),
       name: formData.name,
+      createdBy: editingRule?.createdBy || currentUser,
+      createdAt: editingRule?.createdAt || currentTime,
+      updatedBy: currentUser,
+      updatedAt: currentTime,
       platform: formData.platform,
       sentiment: formData.sentiment,
       isMainPost: formData.isMainPost,
@@ -180,7 +187,7 @@ export default function TaskRulesPage() {
   const addAction = () => {
     const newAction: TriggerAction = {
       id: Date.now().toString(),
-      type: 'comment',
+      type: 'primary_comment',
       count: 1,
       frequency: 1,
       content: ''
