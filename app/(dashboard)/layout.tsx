@@ -86,7 +86,14 @@ function DesktopNav() {
           <Users2 className="h-5 w-5" />
         </NavItem>
 
-        <NavItem href="/tasks" label="任务">
+        <NavItem
+          href="/tasks"
+          label="任务"
+          submenu={[
+            { href: "/tasks", label: "任务列表", icon: <CheckSquare className="h-4 w-4" /> },
+            { href: "/tasks/rules", label: "任务规则", icon: <CheckSquare className="h-4 w-4" /> }
+          ]}
+        >
           <CheckSquare className="h-5 w-5" />
         </NavItem>
 

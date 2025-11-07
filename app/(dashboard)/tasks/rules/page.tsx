@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles } from 'lucide-react';
+import { AiFillTikTok } from 'react-icons/ai';
+import { SiXiaohongshu } from 'react-icons/si';
+import { Switch } from '@/components/ui/switch';
 
 interface TriggerAction {
   id: string;
-  type: 'comment' | 'reply' | 'like' | 'complain' | 'follow' | 'share' | 'collect';
+  type: 'primary_comment' | 'secondary_comment' | 'nested_comment_group' | 'main_like' | 'comment_like' | 'report_main' | 'report_comment' | 'block' | 'delete_main' | 'delete_comment' | 'delete_dropdown' | 'delete_trending';
   count: number; // 执行次数
   frequency?: number; // 执行频率（每N条指标执行一次）
   content?: string; // 评论内容（可选）
@@ -21,6 +25,10 @@ interface TriggerRule {
   id: string;
   // 基本信息
   name: string;
+  createdBy: string;
+  createdAt: string;
+  updatedBy: string;
+  updatedAt: string;
   // 触发条件
   platform: string; // 阵地
   sentiment: 'positive' | 'negative' | 'neutral'; // 情感倾向
@@ -39,9 +47,13 @@ interface TriggerRule {
 export default function TaskRulesPage() {
   const [rules, setRules] = useState<TriggerRule[]>([
     {
-      id: '1',
-      name: '评论点赞规则',
-      platform: '微信公众号',
+      id: '82992331',
+      name: '热门内容自动评论规则',
+      createdBy: '蔡纤',
+      createdAt: '2025-11-05 14:29:03',
+      updatedBy: '蔡纤',
+      updatedAt: '2025-11-05 14:29:03',
+      platform: '抖音',
       sentiment: 'positive',
       isMainPost: true,
       mainPostSource: '官方账号',
@@ -50,15 +62,18 @@ export default function TaskRulesPage() {
       metric: 'comments',
       triggerInterval: 5,
       actions: [
-        { id: '1', type: 'like', count: 2, frequency: 1, content: '' },
-        { id: '2', type: 'comment', count: 1, frequency: 1, content: '感谢支持！' }
+        { id: '1', type: 'primary_comment', count: 1, frequency: 10, content: '' }
       ],
       isActive: true
     },
     {
-      id: '2',
-      name: '点赞关注规则',
-      platform: '微博',
+      id: '82992332',
+      name: '评论监控自动回复规则',
+      createdBy: '蔡纤',
+      createdAt: '2025-11-05 14:30:15',
+      updatedBy: '蔡纤',
+      updatedAt: '2025-11-05 14:30:15',
+      platform: '小红书',
       sentiment: 'neutral',
       isMainPost: false,
       mainPostSource: '用户投稿',
@@ -67,8 +82,7 @@ export default function TaskRulesPage() {
       metric: 'likes',
       triggerInterval: 10,
       actions: [
-        { id: '1', type: 'follow', count: 1, frequency: 1, content: '' },
-        { id: '2', type: 'share', count: 1, frequency: 1, content: '' }
+        { id: '1', type: 'nested_comment_group', count: 1, frequency: 5, content: '' }
       ],
       isActive: false
     }
@@ -224,21 +238,21 @@ export default function TaskRulesPage() {
     return metrics.find(m => m.value === metric) || metrics[0];
   };
 
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case '抖音':
+        return <AiFillTikTok className="w-4 h-4 text-black inline mr-1" />;
+      case '小红书':
+        return <SiXiaohongshu className="w-4 h-4 text-red-500 inline mr-1" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-6 py-8">
-        {/* 页面标题区域 */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
-            <Zap className="h-10 w-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            智能触发规则
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            打造您的自动化监控帝国，让数据为您工作
-          </p>
-        </div>
+
 
         {/* 统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -296,17 +310,12 @@ export default function TaskRulesPage() {
                 <h2 className="text-2xl font-bold text-gray-900">规则管理中心</h2>
                 <p className="text-gray-600 mt-1">智能监控，自动化执行</p>
               </div>
-              <Button
-                onClick={() => {
-                  setEditingRule(null);
-                  resetForm();
-                  setShowForm(true);
-                }}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                创建新规则
-              </Button>
+              <Link href="/tasks/rules/new-simple">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <Plus className="h-5 w-5 mr-2" />
+                  创建新规则
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -320,17 +329,12 @@ export default function TaskRulesPage() {
                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
                   创建您的第一个智能触发规则，让自动化监控开始工作
                 </p>
-                <Button
-                  onClick={() => {
-                    setEditingRule(null);
-                    resetForm();
-                    setShowForm(true);
-                  }}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  开始创建
-                </Button>
+                <Link href="/tasks/rules/new-simple">
+                  <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                    <Plus className="h-5 w-5 mr-2" />
+                    开始创建
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid gap-6">
@@ -338,76 +342,22 @@ export default function TaskRulesPage() {
                   const metricInfo = getMetricInfo(rule.metric);
                   return (
                     <div key={rule.id} className="group bg-gradient-to-r from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <metricInfo.icon className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="text-xl font-bold text-gray-900">{rule.name}</h4>
-                              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                rule.isActive
-                                  ? 'bg-green-100 text-green-800 border border-green-200'
-                                  : 'bg-gray-100 text-gray-600 border border-gray-200'
-                              }`}>
-                                {rule.isActive ? '● 运行中' : '○ 已停止'}
-                              </div>
-                            </div>
-                            <p className="text-gray-600 mb-3">
-                              每 <span className="font-bold text-purple-600">{rule.triggerInterval}</span> 条{' '}
-                              <span className="font-semibold text-blue-600">{metricInfo.label}</span> 时，执行{' '}
-                              <span className="font-semibold text-green-600">{rule.actions.length}</span> 个动作
-                            </p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                {rule.platform}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                {rule.sentiment === 'positive' ? '正面' : rule.sentiment === 'negative' ? '负面' : '中性'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                {rule.publishTimeDays}天内
-                              </span>
-                            </div>
-                            {/* 显示执行动作摘要 */}
-                            <div className="mt-3 space-y-1">
-                              {rule.actions.slice(0, 2).map((action, idx) => (
-                                <div key={action.id} className="text-xs text-gray-500 flex items-center gap-2">
-                                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                                  {action.type === 'comment' ? '💬 评论' :
-                                   action.type === 'reply' ? '↩️ 回复' :
-                                   action.type === 'like' ? '❤️ 点赞' :
-                                   action.type === 'follow' ? '👤 关注' :
-                                   action.type === 'share' ? '🔗 分享' :
-                                   action.type === 'collect' ? '⭐ 收藏' : '⚠️ 投诉'} × {action.count}
-                                  {action.content && ` (${action.content.slice(0, 10)}...)`}
-                                </div>
-                              ))}
-                              {rule.actions.length > 2 && (
-                                <div className="text-xs text-gray-400">
-                                  ... 还有 {rule.actions.length - 2} 个动作
-                                </div>
-                              )}
-                            </div>
+                      {/* 第一行：规则名称和状态开关 */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <h4 className="text-xl font-bold text-gray-900">{rule.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">
+                              {rule.isActive ? '运行中' : '已停止'}
+                            </span>
+                            <Switch
+                              checked={rule.isActive}
+                              onCheckedChange={() => toggleStatus(rule.id)}
+                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
+                            />
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleStatus(rule.id)}
-                            className={`border-2 transition-all duration-300 ${
-                              rule.isActive
-                                ? 'border-green-200 text-green-700 hover:bg-green-50'
-                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            {rule.isActive ? '暂停' : '启动'}
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -424,6 +374,46 @@ export default function TaskRulesPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                        </div>
+                      </div>
+
+                      {/* 第二行：ID、创建信息、更新信息 */}
+                      <div className="flex items-center gap-6 mb-4 text-sm text-gray-600">
+                        <span>ID: {rule.id}</span>
+                        <span>{rule.createdBy} 于 {rule.createdAt} 创建</span>
+                        <span>{rule.updatedBy} 于 {rule.updatedAt} 更新</span>
+                      </div>
+
+                      {/* 第三行：触发条件和执行动作标题 */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex-1">
+                          <span className="text-sm font-semibold text-gray-700">触发条件</span>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <span className="text-sm font-semibold text-gray-700">执行动作</span>
+                        </div>
+                      </div>
+
+                      {/* 第四行：具体触发条件和执行动作内容 */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-medium inline-flex items-center">
+                              {getPlatformIcon(rule.platform)}
+                              {rule.platform}
+                            </span>
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-medium">{metricInfo.label}</span>
+                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-md font-medium">{rule.checkFrequencyHours}小时巡查</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <div className="text-sm">
+                            <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-md font-medium">
+                              {rule.actions.length > 0 && rule.actions[0].type === 'primary_comment' && rule.actions[0].frequency
+                                ? `${metricInfo.label}每${rule.actions[0].frequency}个自动创建1个一级评论`
+                                : `${rule.actions.length}个执行动作`}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -546,9 +536,7 @@ export default function TaskRulesPage() {
                             </SelectItem>
                             <SelectItem value="抖音">
                               <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">抖</span>
-                                </div>
+                                <AiFillTikTok className="w-5 h-5 text-black" />
                                 抖音
                               </div>
                             </SelectItem>
@@ -566,6 +554,12 @@ export default function TaskRulesPage() {
                                   <span className="text-white text-xs font-bold">B</span>
                                 </div>
                                 B站
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="小红书">
+                              <div className="flex items-center gap-2">
+                                <SiXiaohongshu className="w-5 h-5 text-red-500" />
+                                小红书
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -782,13 +776,18 @@ export default function TaskRulesPage() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="comment">💬 评论</SelectItem>
-                                      <SelectItem value="reply">↩️ 回复</SelectItem>
-                                      <SelectItem value="like">❤️ 点赞</SelectItem>
-                                      <SelectItem value="follow">👤 关注</SelectItem>
-                                      <SelectItem value="share">🔗 分享</SelectItem>
-                                      <SelectItem value="collect">⭐ 收藏</SelectItem>
-                                      <SelectItem value="complain">⚠️ 投诉</SelectItem>
+                                      <SelectItem value="primary_comment">💬 一级评论</SelectItem>
+                                      <SelectItem value="secondary_comment">↩️ 二级评论</SelectItem>
+                                      <SelectItem value="nested_comment_group">🏗️ 楼中楼组</SelectItem>
+                                      <SelectItem value="main_like">❤️ 主帖点赞</SelectItem>
+                                      <SelectItem value="comment_like">� 评论点赞</SelectItem>
+                                      <SelectItem value="report_main">⚠️ 投诉主帖</SelectItem>
+                                      <SelectItem value="report_comment">� 投诉评论</SelectItem>
+                                      <SelectItem value="block">🚫 屏蔽</SelectItem>
+                                      <SelectItem value="delete_main">🗑️ 删除主帖</SelectItem>
+                                      <SelectItem value="delete_comment">🗑️ 删除评论</SelectItem>
+                                      <SelectItem value="delete_dropdown">📝 删除下拉词</SelectItem>
+                                      <SelectItem value="delete_trending">🔥 删除大家都在搜</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -835,7 +834,7 @@ export default function TaskRulesPage() {
                                 </div>
                               </div>
 
-                              {action.type === 'reply' && (
+                              {(action.type === 'secondary_comment' || action.type === 'nested_comment_group') && (
                                 <div>
                                   <Label className="text-xs text-gray-600 mb-2 block font-medium">回复内容</Label>
                                   <Input
