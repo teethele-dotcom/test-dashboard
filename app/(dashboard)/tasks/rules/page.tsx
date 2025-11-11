@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles, Search } from 'lucide-react';
+import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles, Search, Clock } from 'lucide-react';
 import { AiFillTikTok } from 'react-icons/ai';
 import { SiXiaohongshu } from 'react-icons/si';
 import { Switch } from '@/components/ui/switch';
@@ -391,7 +391,7 @@ export default function TaskRulesPage() {
           {/* 搜索和批量操作栏 */}
           <div className="p-6 border-b border-gray-100 bg-gray-50/50">
             <div className="flex items-center justify-between gap-4">
-              {/* 搜索框和创建按钮 */}
+              {/* 搜索框和操作按钮 */}
               <div className="flex items-center gap-4 flex-1">
                 <div className="flex-1 max-w-md">
                   <div className="relative">
@@ -404,12 +404,20 @@ export default function TaskRulesPage() {
                     />
                   </div>
                 </div>
-                <Link href="/tasks/rules/new-simple">
-                  <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <Plus className="h-4 w-4 mr-1" />
-                    创建新规则
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/tasks/rules/history">
+                    <Button variant="outline" className="px-4 py-2 rounded-xl border-gray-200 hover:border-blue-500 transition-all duration-300">
+                      <Clock className="h-4 w-4 mr-1" />
+                      执行历史
+                    </Button>
+                  </Link>
+                  <Link href="/tasks/rules/new-simple">
+                    <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                      <Plus className="h-4 w-4 mr-1" />
+                      创建新规则
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               {/* 批量操作按钮 */}
