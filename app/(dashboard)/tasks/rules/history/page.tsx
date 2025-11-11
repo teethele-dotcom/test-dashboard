@@ -107,7 +107,8 @@ export default function TaskRulesExecutionHistoryPage() {
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [taskIdFilter, setTaskIdFilter] = useState('');
   const [triggeredOnly, setTriggeredOnly] = useState(false);
   const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
@@ -123,11 +124,15 @@ export default function TaskRulesExecutionHistoryPage() {
                          execution.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          execution.ruleId.includes(searchQuery);
 
-    const matchesDate = !dateFilter || execution.executedAt.includes(dateFilter);
+    const executionDate = new Date(execution.executedAt.split(' ')[0]);
+    const startDate = startDateFilter ? new Date(startDateFilter) : null;
+    const endDate = endDateFilter ? new Date(endDateFilter) : null;
+
+    const matchesDateRange = (!startDate || executionDate >= startDate) && (!endDate || executionDate <= endDate);
     const matchesTaskId = !taskIdFilter || execution.createdTaskIds.some(id => id.includes(taskIdFilter));
     const matchesTriggered = !triggeredOnly || execution.triggeredTaskCreation;
 
-    return matchesSearch && matchesDate && matchesTaskId && matchesTriggered;
+    return matchesSearch && matchesDateRange && matchesTaskId && matchesTriggered;
   });
 
   // 获取当前规则信息
@@ -267,18 +272,34 @@ export default function TaskRulesExecutionHistoryPage() {
                 </div>
               </div>
 
-              {/* 日期过滤 */}
+              {/* 日期范围过滤 */}
               <div>
-                <Label htmlFor="dateFilter" className="text-sm font-medium text-gray-700 mb-2 block">
-                  执行日期
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  执行日期范围
                 </Label>
-                <Input
-                  id="dateFilter"
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="h-10 border-gray-200 focus:border-blue-500"
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      id="startDateFilter"
+                      type="date"
+                      placeholder="开始日期"
+                      value={startDateFilter}
+                      onChange={(e) => setStartDateFilter(e.target.value)}
+                      className="h-10 border-gray-200 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <span className="flex items-center text-gray-400 text-sm">至</span>
+                  <div className="flex-1">
+                    <Input
+                      id="endDateFilter"
+                      type="date"
+                      placeholder="结束日期"
+                      value={endDateFilter}
+                      onChange={(e) => setEndDateFilter(e.target.value)}
+                      className="h-10 border-gray-200 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* 任务ID过滤 */}
