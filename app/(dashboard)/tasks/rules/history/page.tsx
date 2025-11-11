@@ -351,7 +351,7 @@ export default function TaskRulesExecutionHistoryPage() {
                       创建任务个数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建任务
+                      创建任务ID
                     </th>
                   </tr>
                 </thead>
