@@ -496,7 +496,7 @@ export default function TaskRulesPage() {
                     const metricInfo = getMetricInfo(rule.metric);
                     return (
                       <div key={rule.id} className="group bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
-                        {/* 头部区域：规则名称、ID、创建信息、状态开关 */}
+                        {/* 头部区域：规则名称、ID、创建信息、状态开关、操作按钮 */}
                         <div className="p-6 border-b border-gray-100">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -525,6 +525,26 @@ export default function TaskRulesPage() {
                                   onCheckedChange={() => toggleStatus(rule.id)}
                                   className={`data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300`}
                                 />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEdit(rule)}
+                                  className="text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                                >
+                                  <Settings className="h-4 w-4 mr-1" />
+                                  编辑
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(rule.id)}
+                                  className="text-red-600 hover:bg-red-50 transition-all duration-300"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  删除
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -585,29 +605,7 @@ export default function TaskRulesPage() {
                           </div>
                         </div>
 
-                        {/* 操作区域：编辑、删除等操作按钮 */}
-                        <div className="p-6">
-                          <div className="flex items-center justify-end gap-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(rule)}
-                              className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-all duration-300"
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              编辑
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(rule.id)}
-                              className="border-red-200 text-red-600 hover:bg-red-50 transition-all duration-300"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              删除
-                            </Button>
-                          </div>
-                        </div>
+
                       </div>
                     );
                   })}
