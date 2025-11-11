@@ -342,7 +342,7 @@ export default function TaskRulesExecutionHistoryPage() {
                       当前监控指标数量
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      按规则应当执行动作
+                      当前应生成
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       是否触发创建任务
@@ -351,7 +351,7 @@ export default function TaskRulesExecutionHistoryPage() {
                       创建任务个数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建任务ID清单
+                      1-N个任务ID；提供快捷复制功能
                     </th>
                   </tr>
                 </thead>
@@ -378,7 +378,14 @@ export default function TaskRulesExecutionHistoryPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">{execution.expectedAction}</span>
+                        <span className="text-sm text-gray-900">
+                          {execution.expectedAction.includes('一级评论')
+                            ? `${execution.expectedAction.match(/(\d+)/)?.[1] || '1'}个一级评论任务`
+                            : execution.expectedAction.includes('楼中楼')
+                            ? `${execution.expectedAction.match(/(\d+)/)?.[1] || '1'}个楼中楼评论`
+                            : execution.expectedAction
+                          }
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
