@@ -575,11 +575,11 @@ export default function TaskRulesPage() {
                               <div>
                                 <p className="text-sm text-gray-600 mb-2">{getActionDescription(rule.actions)}</p>
                                 <div className="flex flex-wrap gap-2">
-                                  {rule.actions.map((action, actionIndex) => (
+                                  {rule.actions
+                                    .filter(action => action.type !== 'primary_comment' && action.type !== 'nested_comment_group')
+                                    .map((action, actionIndex) => (
                                     <Badge key={action.id} variant="outline" className="text-xs">
-                                      {action.type === 'primary_comment' && '💬 一级评论'}
                                       {action.type === 'secondary_comment' && '↩️ 二级评论'}
-                                      {action.type === 'nested_comment_group' && '🏗️ 楼中楼组'}
                                       {action.type === 'main_like' && '❤️ 主帖点赞'}
                                       {action.type === 'comment_like' && '👍 评论点赞'}
                                       {action.type === 'report_main' && '⚠️ 投诉主帖'}
