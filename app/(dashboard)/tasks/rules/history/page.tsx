@@ -408,19 +408,15 @@ export default function TaskRulesExecutionHistoryPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {execution.createdTaskIds.length > 0 ? (
                           <div className="flex items-center gap-2">
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {execution.createdTaskIds.map((taskId, idx) => (
-                                <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                  {taskId}
-                                </span>
-                              ))}
-                            </div>
+                            <span className="text-sm text-gray-900 font-mono">
+                              {execution.createdTaskIds.join('；')}
+                            </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  await navigator.clipboard.writeText(execution.createdTaskIds.join(', '));
+                                  await navigator.clipboard.writeText(execution.createdTaskIds.join('；'));
                                   setCopiedTaskId(execution.id);
                                   setTimeout(() => setCopiedTaskId(null), 2000);
                                 } catch (err) {
