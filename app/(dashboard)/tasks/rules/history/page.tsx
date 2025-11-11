@@ -281,7 +281,7 @@ export default function TaskRulesExecutionHistoryPage() {
                     onCheckedChange={setTriggeredOnly}
                     className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
                   />
-                  <span className="text-sm text-gray-600">仅看触发创建任务</span>
+                  <span className="text-sm text-gray-600">仅看需补发任务</span>
                 </div>
               </div>
             </div>
