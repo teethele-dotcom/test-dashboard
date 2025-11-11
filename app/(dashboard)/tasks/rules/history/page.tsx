@@ -351,7 +351,7 @@ export default function TaskRulesExecutionHistoryPage() {
                       创建任务个数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      1-N个任务ID；提供快捷复制功能
+                      创建任务
                     </th>
                   </tr>
                 </thead>
@@ -399,7 +399,7 @@ export default function TaskRulesExecutionHistoryPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {execution.createdTaskCount > 0 ? (
                           <span className="text-sm text-gray-900">
-                            {execution.createdTaskCount}个{execution.expectedAction.includes('一级评论') ? '一级评论' : '楼中楼'}
+                            {execution.createdTaskCount}个{execution.expectedAction.includes('一级评论') ? '一级评论任务' : '楼中楼任务'}
                           </span>
                         ) : (
                           <span className="text-sm text-gray-500">-</span>
