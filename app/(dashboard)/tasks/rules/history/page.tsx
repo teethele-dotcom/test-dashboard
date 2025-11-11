@@ -357,6 +357,9 @@ export default function TaskRulesExecutionHistoryPage() {
                 <thead className="bg-gray-50/50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      规则ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       执行时间
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -379,6 +382,11 @@ export default function TaskRulesExecutionHistoryPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredExecutions.map((execution, index) => (
                     <tr key={execution.id} className="hover:bg-gray-50/50 transition-colors duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900 font-mono">
+                          {execution.ruleId}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 text-gray-400 mr-2" />
