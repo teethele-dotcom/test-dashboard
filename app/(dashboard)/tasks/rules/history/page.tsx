@@ -314,22 +314,22 @@ export default function TaskRulesExecutionHistoryPage() {
                       规则ID
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      执行时间
+                      巡检时间
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      当前监控指标数量
+                      当前评论总数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      当前应生成
+                      计划生成任务数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      是否触发创建任务
+                      是否需补发任务
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      实际创建任务个数
+                      本次补发任务数
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建任务ID
+                      补发任务ID列表
                     </th>
                   </tr>
                 </thead>
