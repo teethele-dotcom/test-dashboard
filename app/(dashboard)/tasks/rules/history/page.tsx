@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles, Search, Calendar, Clock, Target, Check, X, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles, Search, Calendar, Clock, Target, Check, X, ArrowLeft, Copy, CheckCircle2 } from 'lucide-react';
 import { AiFillTikTok } from 'react-icons/ai';
 import { SiXiaohongshu } from 'react-icons/si';
 import { Switch } from '@/components/ui/switch';
@@ -110,6 +110,7 @@ export default function TaskRulesExecutionHistoryPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [taskIdFilter, setTaskIdFilter] = useState('');
   const [triggeredOnly, setTriggeredOnly] = useState(false);
+  const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
 
   // 根据ruleId过滤执行历史
   const ruleFilteredExecutions = ruleId
@@ -312,9 +313,9 @@ export default function TaskRulesExecutionHistoryPage() {
           </div>
         </div>
 
-        {/* 执行历史列表 */}
+        {/* 执行历史表格 */}
         <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="p-8">
+          <div className="overflow-x-auto">
             {filteredExecutions.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -331,96 +332,112 @@ export default function TaskRulesExecutionHistoryPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* 执行记录列表 */}
-                <div className="space-y-4">
+              <table className="w-full">
+                <thead className="bg-gray-50/50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      执行时间
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      当前监控指标数量
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      按规则应当执行动作
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      是否触发创建任务
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      创建任务个数
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      创建任务ID清单
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {filteredExecutions.map((execution, index) => (
-                    <div key={execution.id} className="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(execution.status, execution.triggeredTaskCreation)}
-                            <span className="text-sm font-medium text-gray-600">
-                              执行ID: {execution.id}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-600">
-                            <Clock className="h-4 w-4 inline mr-1" />
+                    <tr key={execution.id} className="hover:bg-gray-50/50 transition-colors duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                          <span className="text-sm text-gray-900 font-mono">
                             {formatDateTime(execution.executedAt)}
-                          </div>
+                          </span>
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* 规则信息 */}
-                        <div className="bg-blue-50/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">规则信息</h5>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-900 font-medium">{execution.ruleName}</p>
-                            <p className="text-xs text-gray-600">规则ID: {execution.ruleId}</p>
-                            <div className="flex items-center gap-1">
-                              {getPlatformIcon(execution.platform)}
-                              <span className="text-xs text-gray-600">{execution.platform}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          <span className="font-medium">{execution.currentMetricCount}</span>
+                          <span className="text-gray-500 ml-1">
+                            ({execution.metric === 'comments' && '评论数'}
+                             {execution.metric === 'likes' && '点赞数'}
+                             {execution.metric === 'shares' && '转发数'}
+                             {execution.metric === 'hot' && '热度值'})
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">{execution.expectedAction}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          execution.triggeredTaskCreation
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {execution.triggeredTaskCreation ? '是' : '否'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {execution.createdTaskCount > 0 ? (
+                          <span className="text-sm text-gray-900">
+                            {execution.createdTaskCount}个{execution.expectedAction.includes('一级评论') ? '一级评论' : '楼中楼'}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {execution.createdTaskIds.length > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {execution.createdTaskIds.map((taskId, idx) => (
+                                <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                  {taskId}
+                                </span>
+                              ))}
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(execution.createdTaskIds.join(', '));
+                                  setCopiedTaskId(execution.id);
+                                  setTimeout(() => setCopiedTaskId(null), 2000);
+                                } catch (err) {
+                                  console.error('复制失败:', err);
+                                }
+                              }}
+                              className="text-gray-400 hover:text-gray-600 p-1"
+                              title="复制任务ID"
+                            >
+                              {copiedTaskId === execution.id ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
-                        </div>
-
-                        {/* 监控指标 */}
-                        <div className="bg-green-50/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">监控指标</h5>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-900">
-                              {execution.metric === 'comments' && '评论数'}
-                              {execution.metric === 'likes' && '点赞数'}
-                              {execution.metric === 'shares' && '转发数'}
-                              {execution.metric === 'hot' && '热度值'}
-                            </p>
-                            <p className="text-xs text-gray-600">当前: {execution.currentMetricCount}</p>
-                          </div>
-                        </div>
-
-                        {/* 执行动作 */}
-                        <div className="bg-orange-50/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">执行动作</h5>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-900">{execution.expectedAction}</p>
-                            {execution.triggeredTaskCreation && (
-                              <p className="text-xs text-green-600 font-medium">
-                                ✓ 已触发创建任务
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 创建任务 */}
-                        <div className="bg-purple-50/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">创建任务</h5>
-                          <div className="space-y-1">
-                            {execution.createdTaskCount > 0 ? (
-                              <>
-                                <p className="text-sm text-gray-900">
-                                  {execution.createdTaskCount}个任务
-                                </p>
-                                <div className="space-y-1">
-                                  {execution.createdTaskIds.map((taskId, idx) => (
-                                    <Badge key={idx} variant="outline" className="text-xs">
-                                      {taskId}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <p className="text-sm text-gray-500">未创建任务</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">-</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
+                </tbody>
+              </table>
             )}
           </div>
         </div>
