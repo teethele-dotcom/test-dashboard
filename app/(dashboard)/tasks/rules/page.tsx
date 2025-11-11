@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles } from 'lucide-react';
+import { MessageCircle, Heart, Repeat2, Flame, Zap, Plus, Trash2, Save, CheckCircle, AlertCircle, Eye, Settings, Play, Pause, Sparkles, Search } from 'lucide-react';
 import { AiFillTikTok } from 'react-icons/ai';
 import { SiXiaohongshu } from 'react-icons/si';
 import { Switch } from '@/components/ui/switch';
@@ -104,6 +104,9 @@ export default function TaskRulesPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const metrics = [
     { value: 'comments', label: '评论数', icon: MessageCircle, color: 'bg-blue-100 text-blue-800' },
@@ -256,6 +259,78 @@ export default function TaskRulesPage() {
     }
   };
 
+  // 过滤规则（搜索功能）
+  const filteredRules = rules.filter(rule =>
+    rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    rule.platform.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    rule.id.includes(searchQuery)
+  );
+
+  // 处理全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRules([]);
+    } else {
+      setSelectedRules(filteredRules.map(rule => rule.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // 处理单个规则选择
+  const handleRuleSelect = (ruleId: string) => {
+    if (selectedRules.includes(ruleId)) {
+      setSelectedRules(selectedRules.filter(id => id !== ruleId));
+    } else {
+      setSelectedRules([...selectedRules, ruleId]);
+    }
+  };
+
+  // 批量启用规则
+  const handleBulkEnable = () => {
+    setRules(rules.map(rule =>
+      selectedRules.includes(rule.id) ? { ...rule, isActive: true } : rule
+    ));
+    setSelectedRules([]);
+    setSelectAll(false);
+  };
+
+  // 批量禁用规则
+  const handleBulkDisable = () => {
+    setRules(rules.map(rule =>
+      selectedRules.includes(rule.id) ? { ...rule, isActive: false } : rule
+    ));
+    setSelectedRules([]);
+    setSelectAll(false);
+  };
+
+  // 批量删除规则
+  const handleBulkDelete = () => {
+    if (window.confirm(`确定要删除选中的 ${selectedRules.length} 个规则吗？`)) {
+      setRules(rules.filter(rule => !selectedRules.includes(rule.id)));
+      setSelectedRules([]);
+      setSelectAll(false);
+    }
+  };
+
+  // 格式化时间显示
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  // 获取动作描述
+  const getActionDescription = (actions: TriggerAction[]) => {
+    if (actions.length === 0) return '无执行动作';
+
+    const primaryAction = actions.find(action => action.type === 'primary_comment');
+    if (primaryAction && primaryAction.frequency) {
+      const metricInfo = getMetricInfo('comments'); // 假设是评论相关的
+      return `${metricInfo.label}每${primaryAction.frequency}个自动创建${primaryAction.count}个一级评论`;
+    }
+
+    return `${actions.length}个执行动作`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-6 py-8">
@@ -326,15 +401,72 @@ export default function TaskRulesPage() {
             </div>
           </div>
 
+          {/* 搜索和批量操作栏 */}
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex items-center justify-between gap-4">
+              {/* 搜索框 */}
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="搜索规则名称、平台或ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-10 border-gray-200 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* 批量操作按钮 */}
+              {selectedRules.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">已选择 {selectedRules.length} 个规则</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkEnable}
+                    className="border-green-200 text-green-600 hover:bg-green-50"
+                  >
+                    <Play className="h-4 w-4 mr-1" />
+                    批量启用
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDisable}
+                    className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                  >
+                    <Pause className="h-4 w-4 mr-1" />
+                    批量禁用
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    批量删除
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="p-8">
-            {rules.length === 0 ? (
+            {filteredRules.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Zap className="h-12 w-12 text-blue-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">还没有规则</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  {rules.length === 0 ? '还没有规则' : '没有找到匹配的规则'}
+                </h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  创建您的第一个智能触发规则，让自动化监控开始工作
+                  {rules.length === 0
+                    ? '创建您的第一个智能触发规则，让自动化监控开始工作'
+                    : '尝试调整搜索条件或创建新规则'
+                  }
                 </p>
                 <Link href="/tasks/rules/new-simple">
                   <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
@@ -344,88 +476,143 @@ export default function TaskRulesPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-6">
-                {rules.map((rule, index) => {
-                  const metricInfo = getMetricInfo(rule.metric);
-                  return (
-                    <div key={rule.id} className="group bg-gradient-to-r from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
-                      {/* 第一行：规则名称和状态开关 */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <h4 className="text-xl font-bold text-gray-900">{rule.name}</h4>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">
-                              {rule.isActive ? '运行中' : '已停止'}
-                            </span>
-                            <Switch
-                              checked={rule.isActive}
-                              onCheckedChange={() => toggleStatus(rule.id)}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
-                            />
+              <div className="space-y-6">
+                {/* 全选复选框 */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    全选 ({filteredRules.length} 个规则)
+                  </span>
+                </div>
+
+                {/* 规则卡片列表 */}
+                <div className="grid gap-6">
+                  {filteredRules.map((rule, index) => {
+                    const metricInfo = getMetricInfo(rule.metric);
+                    return (
+                      <div key={rule.id} className="group bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
+                        {/* 头部区域：规则名称、ID、创建信息、状态开关 */}
+                        <div className="p-6 border-b border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedRules.includes(rule.id)}
+                                onChange={() => handleRuleSelect(rule.id)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <div>
+                                <h4 className="text-xl font-bold text-gray-900 mb-1">{rule.name}</h4>
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <span>ID: {rule.id}</span>
+                                  <span>创建于 {formatDate(rule.createdAt)}</span>
+                                  <span>最后更新: {rule.updatedBy} {formatDate(rule.updatedAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium ${rule.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                                  {rule.isActive ? '启用' : '禁用'}
+                                </span>
+                                <Switch
+                                  checked={rule.isActive}
+                                  onCheckedChange={() => toggleStatus(rule.id)}
+                                  className={`data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300`}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(rule)}
-                            className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-all duration-300"
-                          >
-                            编辑
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(rule.id)}
-                            className="border-red-200 text-red-600 hover:bg-red-50 transition-all duration-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
 
-                      {/* 第二行：ID、创建信息、更新信息 */}
-                      <div className="flex items-center gap-6 mb-4 text-sm text-gray-600">
-                        <span>ID: {rule.id}</span>
-                        <span>{rule.createdBy} 于 {rule.createdAt} 创建</span>
-                        <span>{rule.updatedBy} 于 {rule.updatedAt} 更新</span>
-                      </div>
-
-                      {/* 第三行：触发条件和执行动作标题 */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex-1">
-                          <span className="text-sm font-semibold text-gray-700">触发条件</span>
-                        </div>
-                        <div className="flex-1 text-right">
-                          <span className="text-sm font-semibold text-gray-700">执行动作</span>
-                        </div>
-                      </div>
-
-                      {/* 第四行：具体触发条件和执行动作内容 */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-medium inline-flex items-center">
+                        {/* 条件区域：触发条件列表和逻辑关系 */}
+                        <div className="p-6 border-b border-gray-100 bg-blue-50/30">
+                          <h5 className="text-sm font-semibold text-gray-700 mb-3">触发条件</h5>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
                               {getPlatformIcon(rule.platform)}
                               {rule.platform}
-                            </span>
-                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-medium">{metricInfo.label}</span>
-                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-md font-medium">{rule.checkFrequencyHours}小时巡查</span>
+                            </Badge>
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                              {metricInfo.label}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">
+                              巡查频率: {rule.checkFrequencyHours}小时
+                            </Badge>
+                            <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 border-indigo-200">
+                              情感倾向: {rule.sentiment === 'positive' ? '正面' : rule.sentiment === 'negative' ? '负面' : '中性'}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-pink-100 text-pink-800 border-pink-200">
+                              {rule.isMainPost ? '主帖' : '评论'}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="flex-1 text-right">
-                          <div className="text-sm">
-                            <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-md font-medium">
-                              {rule.actions.length > 0 && rule.actions[0].type === 'primary_comment' && rule.actions[0].frequency
-                                ? `${metricInfo.label}每${rule.actions[0].frequency}个自动创建1个一级评论`
-                                : `${rule.actions.length}个执行动作`}
-                            </span>
+
+                        {/* 动作区域：执行动作描述和任务数量 */}
+                        <div className="p-6 border-b border-gray-100 bg-orange-50/30">
+                          <h5 className="text-sm font-semibold text-gray-700 mb-3">执行动作</h5>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-600 mb-2">{getActionDescription(rule.actions)}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {rule.actions.map((action, actionIndex) => (
+                                  <Badge key={action.id} variant="outline" className="text-xs">
+                                    {action.type === 'primary_comment' && '💬 一级评论'}
+                                    {action.type === 'secondary_comment' && '↩️ 二级评论'}
+                                    {action.type === 'nested_comment_group' && '🏗️ 楼中楼组'}
+                                    {action.type === 'main_like' && '❤️ 主帖点赞'}
+                                    {action.type === 'comment_like' && '👍 评论点赞'}
+                                    {action.type === 'report_main' && '⚠️ 投诉主帖'}
+                                    {action.type === 'report_comment' && '🚨 投诉评论'}
+                                    {action.type === 'block' && '🚫 屏蔽'}
+                                    {action.type === 'delete_main' && '🗑️ 删除主帖'}
+                                    {action.type === 'delete_comment' && '🗑️ 删除评论'}
+                                    {action.type === 'delete_dropdown' && '📝 删除下拉词'}
+                                    {action.type === 'delete_trending' && '🔥 删除大家都在搜'}
+                                    {action.frequency && ` (每${action.frequency}条)`}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-orange-600">{rule.actions.length}</div>
+                              <div className="text-xs text-gray-500">个动作</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 操作区域：编辑、删除等操作按钮 */}
+                        <div className="p-6">
+                          <div className="flex items-center justify-end gap-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(rule)}
+                              className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              编辑
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(rule.id)}
+                              className="border-red-200 text-red-600 hover:bg-red-50 transition-all duration-300"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              删除
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
