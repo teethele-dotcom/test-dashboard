@@ -387,11 +387,7 @@ export default function TaskRulesPage() {
         {/* 规则列表 */}
         <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
           <div className="p-8 border-b border-gray-100">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">规则管理中心</h2>
-                <p className="text-gray-600 mt-1">智能监控，自动化执行</p>
-              </div>
+            <div className="flex justify-end items-center">
               <Link href="/tasks/rules/new-simple">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                   <Plus className="h-5 w-5 mr-2" />
