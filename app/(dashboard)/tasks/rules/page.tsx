@@ -386,16 +386,7 @@ export default function TaskRulesPage() {
 
         {/* 规则列表 */}
         <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="p-8 border-b border-gray-100">
-            <div className="flex justify-end items-center">
-              <Link href="/tasks/rules/new-simple">
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                  <Plus className="h-5 w-5 mr-2" />
-                  创建新规则
-                </Button>
-              </Link>
-            </div>
-          </div>
+
 
           {/* 搜索和批量操作栏 */}
           <div className="p-6 border-b border-gray-100 bg-gray-50/50">
