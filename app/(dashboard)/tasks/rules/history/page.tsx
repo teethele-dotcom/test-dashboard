@@ -42,10 +42,10 @@ export default function TaskRulesExecutionHistoryPage() {
       platform: '抖音',
       metric: 'comments',
       currentMetricCount: 25,
-      expectedAction: '创建1个一级评论',
+      expectedAction: '创建3个一级评论',
       triggeredTaskCreation: true,
-      createdTaskCount: 1,
-      createdTaskIds: ['task_12345'],
+      createdTaskCount: 3,
+      createdTaskIds: ['task_12345', 'task_12346', 'task_12347'],
       status: 'success'
     },
     {
