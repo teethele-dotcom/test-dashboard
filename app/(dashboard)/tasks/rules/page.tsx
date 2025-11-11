@@ -400,17 +400,25 @@ export default function TaskRulesPage() {
           {/* 搜索和批量操作栏 */}
           <div className="p-6 border-b border-gray-100 bg-gray-50/50">
             <div className="flex items-center justify-between gap-4">
-              {/* 搜索框 */}
-              <div className="flex-1 max-w-md">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="搜索规则名称、平台或ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-10 border-gray-200 focus:border-blue-500"
-                  />
+              {/* 搜索框和创建按钮 */}
+              <div className="flex items-center gap-4 flex-1">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="搜索规则名称、平台或ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 h-10 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
+                <Link href="/tasks/rules/new-simple">
+                  <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                    <Plus className="h-4 w-4 mr-1" />
+                    创建新规则
+                  </Button>
+                </Link>
               </div>
 
               {/* 批量操作按钮 */}
@@ -527,19 +535,17 @@ export default function TaskRulesPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEdit(rule)}
-                                  className="text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                                  className="text-blue-600 hover:bg-blue-50 transition-all duration-300 p-2"
                                 >
-                                  <Settings className="h-4 w-4 mr-1" />
-                                  编辑
+                                  <Settings className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDelete(rule.id)}
-                                  className="text-red-600 hover:bg-red-50 transition-all duration-300"
+                                  className="text-red-600 hover:bg-red-50 transition-all duration-300 p-2"
                                 >
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  删除
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
