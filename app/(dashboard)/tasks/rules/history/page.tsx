@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,9 @@ interface ExecutionHistory {
 }
 
 export default function TaskRulesExecutionHistoryPage() {
+  const searchParams = useSearchParams();
+  const ruleId = searchParams.get('ruleId');
+
   const [executions, setExecutions] = useState<ExecutionHistory[]>([
     {
       id: 'exec_001',
@@ -107,8 +111,13 @@ export default function TaskRulesExecutionHistoryPage() {
   const [taskIdFilter, setTaskIdFilter] = useState('');
   const [triggeredOnly, setTriggeredOnly] = useState(false);
 
-  // 过滤执行历史
-  const filteredExecutions = executions.filter(execution => {
+  // 根据ruleId过滤执行历史
+  const ruleFilteredExecutions = ruleId
+    ? executions.filter(execution => execution.ruleId === ruleId)
+    : executions;
+
+  // 进一步过滤执行历史
+  const filteredExecutions = ruleFilteredExecutions.filter(execution => {
     const matchesSearch = execution.ruleName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          execution.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          execution.ruleId.includes(searchQuery);
@@ -119,6 +128,9 @@ export default function TaskRulesExecutionHistoryPage() {
 
     return matchesSearch && matchesDate && matchesTaskId && matchesTriggered;
   });
+
+  // 获取当前规则信息
+  const currentRule = ruleId ? executions.find(execution => execution.ruleId === ruleId) : null;
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
@@ -172,8 +184,15 @@ export default function TaskRulesExecutionHistoryPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">任务规则执行历史</h1>
-              <p className="text-gray-600 mt-1">查看和管理规则的执行记录和任务创建情况</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {ruleId ? `${currentRule?.ruleName} - 执行历史` : '任务规则执行历史'}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {ruleId
+                  ? `查看规则 ${currentRule?.ruleId} 的执行记录和任务创建情况`
+                  : '查看和管理规则的执行记录和任务创建情况'
+                }
+              </p>
             </div>
           </div>
         </div>
@@ -184,7 +203,7 @@ export default function TaskRulesExecutionHistoryPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">总执行次数</p>
-                <p className="text-3xl font-bold text-blue-600">{executions.length}</p>
+                <p className="text-3xl font-bold text-blue-600">{ruleFilteredExecutions.length}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <Play className="h-6 w-6 text-blue-600" />
@@ -195,7 +214,7 @@ export default function TaskRulesExecutionHistoryPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">成功触发</p>
-                <p className="text-3xl font-bold text-green-600">{executions.filter(e => e.triggeredTaskCreation).length}</p>
+                <p className="text-3xl font-bold text-green-600">{ruleFilteredExecutions.filter(e => e.triggeredTaskCreation).length}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <Check className="h-6 w-6 text-green-600" />
@@ -206,7 +225,7 @@ export default function TaskRulesExecutionHistoryPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">创建任务总数</p>
-                <p className="text-3xl font-bold text-purple-600">{executions.reduce((sum, e) => sum + e.createdTaskCount, 0)}</p>
+                <p className="text-3xl font-bold text-purple-600">{ruleFilteredExecutions.reduce((sum, e) => sum + e.createdTaskCount, 0)}</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <Target className="h-6 w-6 text-purple-600" />
@@ -217,7 +236,7 @@ export default function TaskRulesExecutionHistoryPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">今日执行</p>
-                <p className="text-3xl font-bold text-orange-600">{executions.filter(e => e.executedAt.startsWith('2025-11-11')).length}</p>
+                <p className="text-3xl font-bold text-orange-600">{ruleFilteredExecutions.filter(e => e.executedAt.startsWith('2025-11-11')).length}</p>
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-orange-600" />

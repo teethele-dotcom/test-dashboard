@@ -530,6 +530,16 @@ export default function TaskRulesPage() {
                                 />
                               </div>
                               <div className="flex items-center gap-2">
+                                <Link href={`/tasks/rules/history?ruleId=${rule.id}`}>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-purple-600 hover:bg-purple-50 transition-all duration-300 p-2"
+                                    title="查看运行历史"
+                                  >
+                                    <Clock className="h-4 w-4" />
+                                  </Button>
+                                </Link>
                                 <Button
                                   variant="outline"
                                   size="sm"
