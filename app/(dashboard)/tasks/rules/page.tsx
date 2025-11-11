@@ -559,32 +559,26 @@ export default function TaskRulesPage() {
                             {/* 执行动作 */}
                             <div className="bg-orange-50/30 rounded-lg p-4">
                               <h5 className="text-sm font-semibold text-gray-700 mb-3">执行动作</h5>
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-600 mb-2">{getActionDescription(rule.actions)}</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {rule.actions.map((action, actionIndex) => (
-                                      <Badge key={action.id} variant="outline" className="text-xs">
-                                        {action.type === 'primary_comment' && '💬 一级评论'}
-                                        {action.type === 'secondary_comment' && '↩️ 二级评论'}
-                                        {action.type === 'nested_comment_group' && '🏗️ 楼中楼组'}
-                                        {action.type === 'main_like' && '❤️ 主帖点赞'}
-                                        {action.type === 'comment_like' && '👍 评论点赞'}
-                                        {action.type === 'report_main' && '⚠️ 投诉主帖'}
-                                        {action.type === 'report_comment' && '🚨 投诉评论'}
-                                        {action.type === 'block' && '🚫 屏蔽'}
-                                        {action.type === 'delete_main' && '🗑️ 删除主帖'}
-                                        {action.type === 'delete_comment' && '🗑️ 删除评论'}
-                                        {action.type === 'delete_dropdown' && '📝 删除下拉词'}
-                                        {action.type === 'delete_trending' && '🔥 删除大家都在搜'}
-                                        {action.frequency && ` (每${action.frequency}条)`}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="text-right ml-4">
-                                  <div className="text-2xl font-bold text-orange-600">{rule.actions.length}</div>
-                                  <div className="text-xs text-gray-500">个动作</div>
+                              <div>
+                                <p className="text-sm text-gray-600 mb-2">{getActionDescription(rule.actions)}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {rule.actions.map((action, actionIndex) => (
+                                    <Badge key={action.id} variant="outline" className="text-xs">
+                                      {action.type === 'primary_comment' && '💬 一级评论'}
+                                      {action.type === 'secondary_comment' && '↩️ 二级评论'}
+                                      {action.type === 'nested_comment_group' && '🏗️ 楼中楼组'}
+                                      {action.type === 'main_like' && '❤️ 主帖点赞'}
+                                      {action.type === 'comment_like' && '👍 评论点赞'}
+                                      {action.type === 'report_main' && '⚠️ 投诉主帖'}
+                                      {action.type === 'report_comment' && '🚨 投诉评论'}
+                                      {action.type === 'block' && '🚫 屏蔽'}
+                                      {action.type === 'delete_main' && '🗑️ 删除主帖'}
+                                      {action.type === 'delete_comment' && '🗑️ 删除评论'}
+                                      {action.type === 'delete_dropdown' && '📝 删除下拉词'}
+                                      {action.type === 'delete_trending' && '🔥 删除大家都在搜'}
+                                      {action.frequency && ` (每${action.frequency}条)`}
+                                    </Badge>
+                                  ))}
                                 </div>
                               </div>
                             </div>
