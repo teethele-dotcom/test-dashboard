@@ -407,31 +407,35 @@ export default function TaskRulesExecutionHistoryPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {execution.createdTaskIds.length > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-900 font-mono">
-                              {execution.createdTaskIds.join('；')}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(execution.createdTaskIds.join('；'));
-                                  setCopiedTaskId(execution.id);
-                                  setTimeout(() => setCopiedTaskId(null), 2000);
-                                } catch (err) {
-                                  console.error('复制失败:', err);
-                                }
-                              }}
-                              className="text-gray-400 hover:text-gray-600 p-1"
-                              title="复制任务ID"
-                            >
-                              {copiedTaskId === execution.id ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
+                          <div className="flex flex-col gap-1">
+                            {execution.createdTaskIds.map((taskId, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-sm text-gray-900 font-mono">
+                                  {taskId}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await navigator.clipboard.writeText(taskId);
+                                      setCopiedTaskId(`${execution.id}-${idx}`);
+                                      setTimeout(() => setCopiedTaskId(null), 2000);
+                                    } catch (err) {
+                                      console.error('复制失败:', err);
+                                    }
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 p-1 h-6 w-6"
+                                  title={`复制 ${taskId}`}
+                                >
+                                  {copiedTaskId === `${execution.id}-${idx}` ? (
+                                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <span className="text-sm text-gray-500">-</span>
