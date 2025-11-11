@@ -203,53 +203,7 @@ export default function TaskRulesExecutionHistoryPage() {
           </div>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">总执行次数</p>
-                <p className="text-3xl font-bold text-blue-600">{ruleFilteredExecutions.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Play className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">成功触发</p>
-                <p className="text-3xl font-bold text-green-600">{ruleFilteredExecutions.filter(e => e.triggeredTaskCreation).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Check className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">创建任务总数</p>
-                <p className="text-3xl font-bold text-purple-600">{ruleFilteredExecutions.reduce((sum, e) => sum + e.createdTaskCount, 0)}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Target className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">今日执行</p>
-                <p className="text-3xl font-bold text-orange-600">{ruleFilteredExecutions.filter(e => e.executedAt.startsWith('2025-11-11')).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* 搜索和过滤栏 */}
         <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden mb-8">
