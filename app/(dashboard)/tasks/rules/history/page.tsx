@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,7 @@ interface ExecutionHistory {
   status: 'success' | 'failed' | 'partial';
 }
 
-export default function TaskRulesExecutionHistoryPage() {
+function TaskRulesExecutionHistoryContent() {
   const searchParams = useSearchParams();
   const ruleId = searchParams.get('ruleId');
 
@@ -896,5 +897,13 @@ export default function TaskRulesExecutionHistoryPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TaskRulesExecutionHistoryPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TaskRulesExecutionHistoryContent />
+    </Suspense>
   );
 }
