@@ -5,16 +5,105 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ChevronRight, Check } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ChevronRight, Check, X, Plus } from 'lucide-react';
 import MobilePreview from '@/components/MobilePreview';
 
 const steps = ['基本信息', '预算与奖励', '审核要求'];
+
+// Generate mock assets outside component to ensure stability
+const generateMockAssets = () => {
+  const types = ['image', 'video', 'document', 'text', 'presentation', 'audio'];
+  const categories = ['品牌', '产品', '营销', '用户', '培训', '活动', '资料'];
+  const spaces = ['公司资源', '部门共享', '个人素材', '项目专用', '系统模版'];
+  const tagsList = ['热销', '新品', '明星产品', '客户好评', '技术支持', '创意设计'];
+
+  const assets = [];
+
+  for (let i = 1; i <= 200; i++) {
+    const type = types[Math.floor(Math.random() * types.length)];
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    const space = spaces[Math.floor(Math.random() * spaces.length)];
+
+    // Generate random tags (1-3 tags per asset)
+    const numTags = Math.floor(Math.random() * 3) + 1;
+    const tags = [];
+    for (let j = 0; j < numTags; j++) {
+      tags.push(tagsList[Math.floor(Math.random() * tagsList.length)]);
+    }
+
+    // Generate realistic content based on type
+    let content = '';
+    switch (type) {
+      case 'image':
+        content = `产品展示图 - 高清分辨率, 适合电商使用, 文件大小约${Math.floor(Math.random() * 5) + 1}MB`;
+        break;
+      case 'video':
+        content = `产品教程视频 - 时长${Math.floor(Math.random() * 10) + 2}分钟, 支持多设备播放, 包含字幕`;
+        break;
+      case 'document':
+        content = `使用指南文档 - 包含详细操作步骤, 图文并茂, 便于用户理解和使用`;
+        break;
+      case 'text':
+        content = `营销文案模板 - 包含多种风格版本, 适用于不同营销场景, 可定制化修改`;
+        break;
+      case 'presentation':
+        content = `演示文稿资料 - 包含数据分析图表, 产品功能介绍, 会议演示素材`;
+        break;
+      case 'audio':
+        content = `音频素材文件 - 背景音乐/音效, 高质量编码, 支持多格式导出`;
+        break;
+    }
+
+    // Random creator names
+    const creators = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
+    const creator = creators[Math.floor(Math.random() * creators.length)];
+
+    // Random creation dates within last 6 months
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+    const createdAt = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
+
+    assets.push({
+      id: i.toString(),
+      name: `${category}${Math.random().toString(36).substring(2, 8)}${type.charAt(0).toUpperCase() + type.slice(1)}_${i}`,
+      type,
+      category,
+      space,
+      tags: tags.filter((tag, index, arr) => arr.indexOf(tag) === index), // Remove duplicates
+      content,
+      creator,
+      createdAt: createdAt.toISOString(),
+      imageUrl: type === 'image' ? `/api/placeholder/80/60?text=${type.charAt(0).toUpperCase()}${i}` : null
+    });
+  }
+  return assets;
+};
+
+// Generate assets once outside component
+const availableAssets = generateMockAssets();
 
 export default function NewTaskPage(): React.ReactElement {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitAction, setSubmitAction] = useState<'save' | 'create' | 'publish'>('create');
+  const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedMaterialsOrder, setSelectedMaterialsOrder] = useState<string[]>([]);
+  const [autoDistribute, setAutoDistribute] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSpace, setFilterSpace] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [filterCategories, setFilterCategories] = useState<string>('all');
+  const [filterTags, setFilterTags] = useState<string>('all');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // Filter for showing only selected items
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -148,6 +237,179 @@ export default function NewTaskPage(): React.ReactElement {
     if (confirm('离开页面将丢失未保存的数据，确定要离开吗？')) {
       router.push('/tasks');
     }
+  };
+
+  const handleMaterialModalConfirm = () => {
+    // Reset pagination to first page when closing modal
+    setCurrentPage(1);
+
+    // Create mock rich material data for mobile preview
+    const mockMaterials = selectedMaterials.map(materialName => {
+      // Parse material type from name or generate mock data
+      const isImage = materialName.includes('图文') || materialName.includes('图片');
+      const isVideo = materialName.includes('视频');
+
+      if (isImage) {
+        return {
+          name: materialName,
+          type: 'image',
+          url: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 100000 + 1500000000)}?w=300&h=200&fit=crop&auto=format`,
+          description: '产品展示图片',
+          thumbnail: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 100000 + 1500000000)}?w=120&h=80&fit=crop&auto=format`
+        };
+      } else if (isVideo) {
+        return {
+          name: materialName,
+          type: 'video',
+          url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4', // Sample video URL
+          duration: '02:30',
+          description: '产品介绍视频',
+          thumbnail: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 100000 + 1500000000)}?w=300&h=200&fit=crop&auto=format`
+        };
+      } else {
+        return {
+          name: materialName,
+          type: 'document',
+          url: '#',
+          description: '文档素材',
+          thumbnail: null
+        };
+      }
+    });
+
+    // Store the selected materials with rich data in formData.taskMaterial as JSON string
+    updateFormData('taskMaterial', JSON.stringify({
+      materials: selectedMaterials,
+      materialsData: mockMaterials,
+      autoDistribute
+    }));
+    setIsMaterialModalOpen(false);
+  };
+
+  const toggleMaterialSelection = (asset: { name: string }) => {
+    const wasSelected = selectedMaterials.includes(asset.name);
+
+    setSelectedMaterials(prev => {
+      if (wasSelected) {
+        return prev.filter(name => name !== asset.name);
+      } else {
+        return [...prev, asset.name];
+      }
+    });
+
+    setSelectedMaterialsOrder(prev => {
+      if (wasSelected) {
+        return prev.filter(name => name !== asset.name);
+      } else {
+        return [...prev, asset.name];
+      }
+    });
+  };
+
+  const selectAllCurrentPage = () => {
+    // Get current filtered assets that are visible on current page
+    const filteredAssets = availableAssets.filter(asset => {
+      // First check if only showing selected items
+      if (showOnlySelected) {
+        const isSelected = selectedMaterials.includes(asset.name);
+        if (!isSelected) return false;
+      }
+
+      const matchesSearch = searchQuery === '' ||
+        asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
+      const matchesType = filterType === 'all' || asset.type === filterType;
+      const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
+      const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
+      return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+    });
+
+    // Get selected assets that might not match current filters
+    const selectedAssets = availableAssets.filter(asset =>
+      selectedMaterials.includes(asset.name)
+    );
+
+    // Combine filtered assets with selected assets, remove duplicates and sort selected to top
+    const allVisibleAssets = [...filteredAssets];
+    selectedAssets.forEach(asset => {
+      if (!allVisibleAssets.find(a => a.name === asset.name)) {
+        allVisibleAssets.unshift(asset); // Add selected items at top
+      }
+    });
+
+    // Sort so selected items appear at the top
+    allVisibleAssets.sort((a, b) => {
+      const aSelected = selectedMaterials.includes(a.name);
+      const bSelected = selectedMaterials.includes(b.name);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+
+    // Get assets for current page
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageAssets = allVisibleAssets.slice(startIndex, endIndex);
+
+    const assetNames = currentPageAssets.map(asset => asset.name);
+    setSelectedMaterials(prev => {
+      const newSelected = new Set(prev);
+      assetNames.forEach(name => newSelected.add(name));
+      return Array.from(newSelected);
+    });
+  };
+
+  const deselectAllCurrentPage = () => {
+    // Get current filtered assets that are visible on current page
+    const filteredAssets = availableAssets.filter(asset => {
+      // First check if only showing selected items
+      if (showOnlySelected) {
+        const isSelected = selectedMaterials.includes(asset.name);
+        if (!isSelected) return false;
+      }
+
+      const matchesSearch = searchQuery === '' ||
+        asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
+      const matchesType = filterType === 'all' || asset.type === filterType;
+      const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
+      const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
+      return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+    });
+
+    // Get selected assets that might not match current filters
+    const selectedAssets = availableAssets.filter(asset =>
+      selectedMaterials.includes(asset.name)
+    );
+
+    // Combine filtered assets with selected assets, remove duplicates and sort selected to top
+    const allVisibleAssets = [...filteredAssets];
+    selectedAssets.forEach(asset => {
+      if (!allVisibleAssets.find(a => a.name === asset.name)) {
+        allVisibleAssets.unshift(asset); // Add selected items at top
+      }
+    });
+
+    // Sort so selected items appear at the top
+    allVisibleAssets.sort((a, b) => {
+      const aSelected = selectedMaterials.includes(a.name);
+      const bSelected = selectedMaterials.includes(b.name);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+
+    // Get assets for current page
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageAssets = allVisibleAssets.slice(startIndex, endIndex);
+
+    const assetNames = currentPageAssets.map(asset => asset.name);
+    setSelectedMaterials(prev => prev.filter(name => !assetNames.includes(name)));
   };
 
   const renderStep = () => {
@@ -327,15 +589,93 @@ export default function NewTaskPage(): React.ReactElement {
 
               {/* Task Material - Optional */}
               <div className="space-y-2">
-                <label htmlFor="taskMaterial" className="text-sm font-medium">任务素材</label>
-                <textarea
-                  id="taskMaterial"
-                  value={formData.taskMaterial}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('taskMaterial', e.target.value)}
-                  placeholder="可选：提供任务相关的素材链接或说明"
-                  rows={3}
-                  className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <label className="text-sm font-medium">任务素材</label>
+                {selectedMaterials.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <button
+                        onClick={() => setIsMaterialModalOpen(true)}
+                        className="text-sm text-muted-foreground hover:text-primary cursor-pointer underline underline-offset-2"
+                      >
+                        已选素材 ({selectedMaterials.length} 个)
+                      </button>
+                      <div className="flex items-center space-x-2">
+                        {selectedMaterials.length > 0 && (
+                          <>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={autoDistribute}
+                                onCheckedChange={setAutoDistribute}
+                                id="auto-distribute-inline"
+                                className="scale-75"
+                              />
+                              <label htmlFor="auto-distribute-inline" className="text-xs font-medium text-gray-700">
+                                自动分发
+                              </label>
+                            </div>
+                            <Button
+                              onClick={() => setSelectedMaterials([])}
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-red-600 hover:text-red-800 h-6 px-2"
+                            >
+                              清空
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMaterials.slice(0, 10).map((material, index) => (
+                        <div key={`${material}-${index}`} className="bg-blue-100 px-3 py-1 rounded-full text-sm flex items-center gap-1 max-w-32">
+                          <span className="truncate">{material}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMaterials(prev => prev.filter(m => m !== material));
+                            }}
+                            className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      {selectedMaterials.length > 10 && (
+                        <button
+                          onClick={() => setIsMaterialModalOpen(true)}
+                          className="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-sm text-gray-600 cursor-pointer transition-colors"
+                          key="more-button"
+                        >
+                          +{selectedMaterials.length - 10} 个更多
+                        </button>
+                      )}
+                    </div>
+                    {selectedMaterials.length > 10 && (
+                      <p className="text-xs text-muted-foreground">
+                        点击【已选素材】或【更多】管理所有素材
+                      </p>
+                    )}
+                  </div>
+                )}
+                <Button
+                  onClick={() => {
+                    // 如果已有选中的素材，打开弹窗时自动开启"仅显示已选中"模式
+                    if (selectedMaterials.length > 0) {
+                      setShowOnlySelected(true);
+                    } else {
+                      setShowOnlySelected(false);
+                    }
+                    setIsMaterialModalOpen(true);
+                  }}
+                  variant="outline"
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+选择素材
+                </Button>
+
+
               </div>
             </div>
           </div>
@@ -790,7 +1130,7 @@ export default function NewTaskPage(): React.ReactElement {
             </div>
 
             {/* Enhanced Mobile Preview Component */}
-            <MobilePreview formData={formData} />
+            <MobilePreview formData={formData} autoDistribute={autoDistribute} />
 
             <div className="text-xs text-center text-muted-foreground">
               ✏️ 填写表单可实时预览效果
@@ -866,6 +1206,458 @@ export default function NewTaskPage(): React.ReactElement {
           </div>
         </div>
       </div>
+
+      {/* Material Selection Modal */}
+      {isMaterialModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 h-[90vh] flex flex-col overflow-hidden">
+            {/* Header - Fixed */}
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">选择任务素材</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    选择任务相关的素材资源
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsMaterialModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Comprehensive Search and Filters - Fixed */}
+            <div className="p-4 border-b bg-gray-50">
+              <div className="grid grid-cols-5 gap-3 mb-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">综合搜索</label>
+                  <Input
+                    placeholder="素材名称、内容关键词..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">空间</label>
+                  <select
+                    value={filterSpace}
+                    onChange={(e) => setFilterSpace(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">全部空间</option>
+                    <option value="公司资源">公司资源</option>
+                    <option value="部门共享">部门共享</option>
+                    <option value="个人素材">个人素材</option>
+                    <option value="项目专用">项目专用</option>
+                    <option value="系统模版">系统模版</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">类型</label>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">全部类型</option>
+                    <option value="image">图文</option>
+                    <option value="video">视频</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">分类</label>
+                  <select
+                    value={filterCategories}
+                    onChange={(e) => setFilterCategories(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">全部分类</option>
+                    <option value="品牌">品牌</option>
+                    <option value="产品">产品</option>
+                    <option value="营销">营销</option>
+                    <option value="用户">用户</option>
+                    <option value="培训">培训</option>
+                    <option value="活动">活动</option>
+                    <option value="资料">资料</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">标签</label>
+                  <select
+                    value={filterTags}
+                    onChange={(e) => setFilterTags(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">全部标签</option>
+                    <option value="热销">热销</option>
+                    <option value="新品">新品</option>
+                    <option value="明星产品">明星产品</option>
+                    <option value="客户好评">客户好评</option>
+                    <option value="技术支持">技术支持</option>
+                    <option value="创意设计">创意设计</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Additional Filters */}
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showOnlySelected}
+                    onChange={(e) => setShowOnlySelected(e.target.checked)}
+                    className="mr-2 h-4 w-4 text-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium">仅显示已选中</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Table Container and Paginator */}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Table Content */}
+              <div className="flex-1 overflow-auto">
+                {/* Table Header - Sticky within scroll container */}
+                <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-100 border-b text-xs font-medium text-gray-700 sticky top-0 z-10">
+                  <div className="col-span-1">
+                    <input
+                      type="checkbox"
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        if (checked) {
+                          selectAllCurrentPage();
+                        } else {
+                          deselectAllCurrentPage();
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded"
+                    />
+                  </div>
+                  <div className="col-span-1">类型</div>
+                  <div className="col-span-1">图片</div>
+                  <div className="col-span-3">标题</div>
+                  <div className="col-span-3">正文</div>
+                  <div className="col-span-1">标签</div>
+                  <div className="col-span-1">分类</div>
+                  <div className="col-span-1">
+                    创建人及时间
+                  </div>
+                </div>
+
+                {/* Table Body */}
+                <div className="divide-y">
+                {(() => {
+                  // 过滤符合当前筛选条件的素材
+                  let allVisibleAssets = availableAssets.filter(asset => {
+                    const matchesSearch = searchQuery === '' ||
+                      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
+                    const matchesType = filterType === 'all' || asset.type === filterType;
+                    const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
+                    const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
+                    return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+                  });
+
+                  // 如果开启了"仅显示已选中"，则只显示选中的素材，并按选择顺序排序
+                  if (showOnlySelected) {
+                    const selectedAssets = availableAssets.filter(asset =>
+                      selectedMaterials.includes(asset.name)
+                    );
+                    // 按选择顺序排序：先选择的项目在前，后选择的项目在后
+                    allVisibleAssets = selectedMaterialsOrder
+                      .map(name => selectedAssets.find(asset => asset.name === name))
+                      .filter((asset): asset is typeof availableAssets[0] => asset !== undefined);
+                  }
+
+                  if (allVisibleAssets.length === 0) {
+                    return (
+                      <div className="col-span-12 text-center py-12">
+                        <p className="text-gray-500">没有找到匹配的素材</p>
+                        <p className="text-sm text-gray-400 mt-1">尝试调整搜索条件</p>
+                      </div>
+                    );
+                  }
+
+                  // Pagination logic
+                  const totalItems = allVisibleAssets.length;
+                  const totalPages = Math.ceil(totalItems / itemsPerPage);
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const currentAssets = allVisibleAssets.slice(startIndex, endIndex);
+
+                  return currentAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className={`grid grid-cols-12 gap-3 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        selectedMaterials.includes(asset.name) ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={(e) => {
+                        // Only toggle if not clicking on checkbox (avoid double-trigger)
+                        if ((e.target as HTMLInputElement).type !== 'checkbox') {
+                          toggleMaterialSelection(asset);
+                        }
+                      }}
+                    >
+                      {/* Checkbox */}
+                      <div className="col-span-1 flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedMaterials.includes(asset.name)}
+                          onChange={() => toggleMaterialSelection(asset)}
+                          className="h-4 w-4 text-blue-600 rounded"
+                          onClick={(e) => e.stopPropagation()} // Prevent row onClick when clicking checkbox
+                        />
+                      </div>
+
+                      {/* Type */}
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-xs font-medium px-2 py-1 bg-orange-100 text-orange-800 rounded-full whitespace-nowrap">
+                          {asset.type === 'video' ? '视频' : '图文'}
+                        </span>
+                      </div>
+
+                      {/* Image */}
+                      <div className="col-span-1 flex items-center justify-center">
+                        {asset.type === 'image' ? (
+                          <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-700">图</span>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-500 uppercase">
+                              {asset.type.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <div className="col-span-3 flex items-center">
+                        <div className="text-sm font-medium truncate" title={asset.name}>
+                          {asset.name}
+                        </div>
+                      </div>
+
+                      {/* Content/Description */}
+                      <div className="col-span-3 flex items-center">
+                        <div className="text-xs text-gray-600 line-clamp-2 max-w-full" title={asset.content}>
+                          {asset.content}
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      <div className="col-span-1 flex items-center">
+                        <div className="flex flex-wrap gap-1">
+                          {asset.tags.slice(0, 2).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {asset.tags.length > 2 && (
+                            <span className="text-xs text-gray-500"> +{asset.tags.length - 2}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Classification/Type */}
+                      <div className="col-span-1 flex items-center">
+                        <span className="text-xs text-gray-600">
+                          {asset.type === 'image' ? '图片' :
+                            asset.type === 'video' ? '视频' :
+                            asset.type === 'document' ? '文档' :
+                            asset.type === 'text' ? '文字' :
+                            asset.type === 'presentation' ? '演示' :
+                            asset.type === 'audio' ? '音频' : asset.type}
+                        </span>
+                      </div>
+
+                      {/* Creator and Time */}
+                      <div className="col-span-1 flex items-center">
+                        <div className="text-xs text-gray-600 text-center">
+                          <div className="font-medium">{asset.creator}</div>
+                          <div>{new Date(asset.createdAt).toLocaleDateString('zh-CN')}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {(() => {
+                const filteredAssets = availableAssets.filter(asset => {
+                  // First check if only showing selected items
+                  if (showOnlySelected) {
+                    const isSelected = selectedMaterials.includes(asset.name);
+                    if (!isSelected) return false;
+                  }
+
+                  const matchesSearch = searchQuery === '' ||
+                    asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
+                  const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
+                  const matchesType = filterType === 'all' || asset.type === filterType;
+                  const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
+                  const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
+                  return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+                });
+
+                const selectedAssets = availableAssets.filter(asset =>
+                  selectedMaterials.includes(asset.name)
+                );
+
+                const allVisibleAssets = [...filteredAssets];
+                selectedAssets.forEach(asset => {
+                  if (!allVisibleAssets.find(a => a.name === asset.name)) {
+                    allVisibleAssets.unshift(asset);
+                  }
+                });
+
+                allVisibleAssets.sort((a, b) => {
+                  const aSelected = selectedMaterials.includes(a.name);
+                  const bSelected = selectedMaterials.includes(b.name);
+                  if (aSelected && !bSelected) return -1;
+                  if (!aSelected && bSelected) return 1;
+                  return 0;
+                });
+
+                const totalItems = allVisibleAssets.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+                if (totalPages <= 1) return null;
+
+                const getVisiblePages = () => {
+                  const delta = 2;
+                  const range = [];
+                  const rangeWithDots = [];
+
+                  for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+                    range.push(i);
+                  }
+
+                  if (currentPage - delta > 2) {
+                    rangeWithDots.push(1, '...');
+                  } else {
+                    rangeWithDots.push(1);
+                  }
+
+                  rangeWithDots.push(...range);
+
+                  if (currentPage + delta < totalPages - 1) {
+                    rangeWithDots.push('...', totalPages);
+                  } else if (totalPages > 1) {
+                    rangeWithDots.push(totalPages);
+                  }
+
+                  return rangeWithDots;
+                };
+
+                return (
+                  <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t">
+                    <div className="text-sm text-gray-600">
+                      显示 {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} 条，共 {totalItems} 条记录
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                      {/* First page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        ««
+                      </Button>
+
+                      {/* Previous page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        ‹
+                      </Button>
+
+                      {/* Page numbers */}
+                      {getVisiblePages().map((page, index) => (
+                        <Button
+                          key={`${page}-${index}`}
+                          variant={page === currentPage ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                          disabled={page === '...'}
+                          className="h-8 w-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+
+                      {/* Next page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        ›
+                      </Button>
+
+                      {/* Last page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        »»
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+
+
+            {/* Footer - Fixed */}
+            <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                已选择 {selectedMaterials.length} 个素材
+              </div>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={() => setIsMaterialModalOpen(false)}
+                  variant="outline"
+                >
+                  取消
+                </Button>
+                <Button
+                  onClick={handleMaterialModalConfirm}
+                  disabled={selectedMaterials.length === 0}
+                >
+                  确认选择
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

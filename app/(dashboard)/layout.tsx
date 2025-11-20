@@ -8,7 +8,8 @@ import {
   Settings,
   ShoppingCart,
   Users2,
-  CheckSquare
+  CheckSquare,
+  FileText
 } from 'lucide-react';
 
 import {
@@ -71,10 +72,17 @@ function DesktopNav() {
         </Link>
 
         <NavItem
+          href="/tasks"
+          label="任务管理"
+        >
+          <CheckSquare className="h-5 w-5" />
+        </NavItem>
+
+        <NavItem
           href="/tasks/rules"
           label="任务规则"
         >
-          <CheckSquare className="h-5 w-5" />
+          <FileText className="h-5 w-5" />
         </NavItem>
       </nav>
       <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
@@ -114,10 +122,17 @@ function MobileNav() {
             <span className="sr-only">Vercel</span>
           </Link>
           <Link
-            href="/tasks/rules"
+            href="/tasks"
             className="flex items-center gap-4 px-2.5 text-foreground"
           >
             <CheckSquare className="h-5 w-5" />
+            任务管理
+          </Link>
+          <Link
+            href="/tasks/rules"
+            className="flex items-center gap-4 px-2.5 text-foreground"
+          >
+            <FileText className="h-5 w-5" />
             任务规则
           </Link>
         </nav>

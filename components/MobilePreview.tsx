@@ -30,6 +30,7 @@ interface MobilePreviewProps {
     taskMaterial: string;
     totalTasks: string;
   };
+  autoDistribute: boolean;
 }
 
 const getPlatformIcon = (platform: string) => {
@@ -60,7 +61,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export default function MobilePreview({ formData }: MobilePreviewProps) {
+export default function MobilePreview({ formData, autoDistribute }: MobilePreviewProps) {
   const [activeTab, setActiveTab] = useState('activity');
 
   return (
@@ -274,31 +275,123 @@ export default function MobilePreview({ formData }: MobilePreviewProps) {
                   <h3 className="font-medium">任务素材</h3>
                 </div>
 
-                {formData.taskMaterial ? (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="text-sm text-gray-700 whitespace-pre-line">
-                      {formData.taskMaterial}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <MdFolder className="text-3xl mb-2 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-500">暂无任务素材</p>
-                    <p className="text-xs text-gray-400 mt-1">请在表单中添加素材说明</p>
-                  </div>
-                )}
+                {(() => {
+                  const materialData = formData.taskMaterial ? JSON.parse(formData.taskMaterial) : null;
+                  const hasMaterials = materialData && materialData.materialsData && materialData.materialsData.length > 0;
+
+                  if (hasMaterials && !autoDistribute) {
+                    // 显示素材内容
+                    return (
+                      <div className="space-y-4">
+                        {materialData.materialsData.map((material: any, index: number) => (
+                          <div key={material.name} className="bg-green-50 border border-green-200 rounded-lg overflow-hidden">
+                            <div className="flex items-center gap-3 p-3 border-b border-green-200">
+                              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-sm">
+                                {material.type === 'image' ? '图' : material.type === 'video' ? '视' : '文'}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-sm text-green-900">{material.name}</p>
+                                <p className="text-xs text-green-700">{material.description}</p>
+                              </div>
+                            </div>
+                            <div className="p-4">
+                              {material.type === 'image' && material.url && (
+                                <div className="relative">
+                                  <img
+                                    src={material.url}
+                                    alt={material.name}
+                                    className="w-full h-48 object-cover rounded-lg"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                                    <span className="text-gray-500 text-sm">图片加载失败</span>
+                                  </div>
+                                </div>
+                              )}
+                              {material.type === 'video' && material.url && (
+                                <div className="relative">
+                                  <video
+                                    src={material.url}
+                                    controls
+                                    className="w-full h-48 object-cover rounded-lg"
+                                    poster={material.thumbnail}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLVideoElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  >
+                                    您的浏览器不支持视频播放。
+                                  </video>
+                                  <div className="hidden absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                                    <span className="text-gray-500 text-sm">视频加载失败</span>
+                                  </div>
+                                  {/* 视频时长显示 */}
+                                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                                    {material.duration || '00:00'}
+                                  </div>
+                                </div>
+                              )}
+                              {material.type === 'document' && (
+                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                    <MdAttachFile size={24} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm">{material.name}</p>
+                                    <p className="text-xs text-gray-500 mt-1">点击下载查看完整文档</p>
+                                  </div>
+                                </div>
+                              )}
+                              {index < materialData.materialsData.length - 1 && (
+                                <div className="mt-3 pt-3 border-t border-green-200"></div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else if (hasMaterials && autoDistribute) {
+                    // 自动分发模式：显示领取后可见
+                    return (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+                        <MdAccessTime className="text-3xl mb-2 text-amber-400 mx-auto" />
+                        <p className="text-sm text-amber-700 font-medium">任务素材</p>
+                        <p className="text-xs text-amber-600 mt-1">领取任务后可查看素材内容</p>
+                        <div className="mt-3 text-xs text-amber-500">
+                          您的任务包含 {materialData.materialsData.length} 个优质素材资源
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // 无素材状态
+                    return (
+                      <div className="bg-gray-50 rounded-lg p-6 text-center">
+                        <MdFolder className="text-3xl mb-2 text-gray-400 mx-auto" />
+                        <p className="text-sm text-gray-500">暂无任务素材</p>
+                        <p className="text-xs text-gray-400 mt-1">请在表单中添加素材说明</p>
+                      </div>
+                    );
+                  }
+                })()}
 
                 {/* Suggested Actions */}
-                <div className="space-y-2">
-                  <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <MdAttachFile size={16} />
-                    <span>查看附件资料</span>
-                  </button>
-                  <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <MdEmojiObjects size={16} />
-                    <span>参考示例作品</span>
-                  </button>
-                </div>
+                {!autoDistribute && (
+                  <div className="space-y-2">
+                    <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+                      <MdAttachFile size={16} />
+                      <span>查看附件资料</span>
+                    </button>
+                    <button className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+                      <MdEmojiObjects size={16} />
+                      <span>参考示例作品</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
