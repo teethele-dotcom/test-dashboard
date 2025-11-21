@@ -279,7 +279,7 @@ export default function MobilePreview({ formData, autoDistribute }: MobilePrevie
                   const materialData = formData.taskMaterial ? JSON.parse(formData.taskMaterial) : null;
                   const hasMaterials = materialData && materialData.materialsData && materialData.materialsData.length > 0;
 
-                  if (hasMaterials && !autoDistribute) {
+                  if (hasMaterials) {
                     // 显示素材内容
                     return (
                       <div className="space-y-4">
@@ -353,18 +353,6 @@ export default function MobilePreview({ formData, autoDistribute }: MobilePrevie
                             </div>
                           </div>
                         ))}
-                      </div>
-                    );
-                  } else if (hasMaterials && autoDistribute) {
-                    // 自动分发模式：显示领取后可见
-                    return (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
-                        <MdAccessTime className="text-3xl mb-2 text-amber-400 mx-auto" />
-                        <p className="text-sm text-amber-700 font-medium">任务素材</p>
-                        <p className="text-xs text-amber-600 mt-1">领取任务后可查看素材内容</p>
-                        <div className="mt-3 text-xs text-amber-500">
-                          您的任务包含 {materialData.materialsData.length} 个优质素材资源
-                        </div>
                       </div>
                     );
                   } else {

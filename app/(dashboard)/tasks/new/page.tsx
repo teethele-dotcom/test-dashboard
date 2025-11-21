@@ -660,31 +660,16 @@ export default function NewTaskPage(): React.ReactElement {
                       >
                         已选素材 ({selectedMaterials.length} 个)
                       </button>
-                      <div className="flex items-center space-x-2">
-                        {selectedMaterials.length > 0 && (
-                          <>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                checked={autoDistribute}
-                                onCheckedChange={setAutoDistribute}
-                                id="auto-distribute-inline"
-                                className="scale-75"
-                              />
-                              <label htmlFor="auto-distribute-inline" className="text-xs font-medium text-gray-700">
-                                自动分发
-                              </label>
-                            </div>
-                            <Button
-                              onClick={() => setSelectedMaterials([])}
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-red-600 hover:text-red-800 h-6 px-2"
-                            >
-                              清空
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      {selectedMaterials.length > 0 && (
+                        <Button
+                          onClick={() => setSelectedMaterials([])}
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-red-600 hover:text-red-800 h-6 px-2"
+                        >
+                          清空
+                        </Button>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {selectedMaterials.slice(0, 10).map((material, index) => (
