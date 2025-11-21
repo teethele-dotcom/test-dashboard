@@ -64,15 +64,34 @@ const generateMockAssets = () => {
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
     const createdAt = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
 
-    // Random publish data
-    const isPublished = Math.random() > 0.3; // 70% chance published
-    const publishedPlatforms = ['微信', '抖音', '微博'];
-    const randomPlatforms = isPublished ?
-      publishedPlatforms.filter(() => Math.random() > 0.4) : // Random subset
-      [];
+    // Random publish data with multiple states
+    const rand = Math.random();
+    let status = 'unpublished'; // unpublished, occupied, published
+    let taskId = null;
+    const occupiedTasks = [];
 
-    // If no platforms selected but is published, publish to at least one
-    if (isPublished && randomPlatforms.length === 0) {
+    if (rand < 0.3) { // 30% published
+      status = 'published';
+      taskId = `TASK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    } else if (rand < 0.6) { // 30% occupied
+      status = 'occupied';
+      // Create 1-3 occupied task IDs
+      const numTasks = Math.floor(Math.random() * 3) + 1;
+      for (let t = 0; t < numTasks; t++) {
+        occupiedTasks.push(`TASK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`);
+      }
+      taskId = occupiedTasks[0]; // For compatibility with hover
+    } else { // 40% unpublished
+      status = 'unpublished';
+    }
+
+    // Platform data for published/occupied items
+    const publishedPlatforms = ['微信', '抖音', '微博'];
+    const randomPlatforms = status === 'unpublished' ? [] :
+      publishedPlatforms.filter(() => Math.random() > 0.4);
+
+    // If no platforms selected but is published or occupied, publish to at least one
+    if ((status === 'published' || status === 'occupied') && randomPlatforms.length === 0) {
       randomPlatforms.push(publishedPlatforms[Math.floor(Math.random() * publishedPlatforms.length)]);
     }
 
@@ -87,8 +106,11 @@ const generateMockAssets = () => {
       creator,
       createdAt: createdAt.toISOString(),
       imageUrl: type === 'image' ? `/api/placeholder/80/60?text=${type.charAt(0).toUpperCase()}${i}` : null,
-      isPublished,
-      publishedPlatforms: randomPlatforms
+      isPublished: status === 'published',
+      status,
+      publishedPlatforms: randomPlatforms,
+      occupiedTasks,
+      taskId
     });
   }
   return assets;
@@ -121,6 +143,9 @@ export default function NewTaskPage(): React.ReactElement {
 
   // Filter for showing only selected items
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+
+  // Copy feedback state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -1357,6 +1382,7 @@ export default function NewTaskPage(): React.ReactElement {
                       <option value="douyin-published">抖音</option>
                       <option value="weibo-published">微博</option>
                     </optgroup>
+                    <option value="occupied">已占用</option>
                     <option value="unpublished">未发布</option>
                   </select>
                 </div>
@@ -1383,16 +1409,19 @@ export default function NewTaskPage(): React.ReactElement {
                     if (filterPublishCombined !== 'all') {
                       switch (filterPublishCombined) {
                         case 'wechat-published':
-                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微信');
+                          matchesPublishCombined = asset.status === 'published' && asset.publishedPlatforms.includes('微信');
                           break;
                         case 'douyin-published':
-                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('抖音');
+                          matchesPublishCombined = asset.status === 'published' && asset.publishedPlatforms.includes('抖音');
                           break;
                         case 'weibo-published':
-                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微博');
+                          matchesPublishCombined = asset.status === 'published' && asset.publishedPlatforms.includes('微博');
+                          break;
+                        case 'occupied':
+                          matchesPublishCombined = asset.status === 'occupied';
                           break;
                         case 'unpublished':
-                          matchesPublishCombined = !asset.isPublished;
+                          matchesPublishCombined = asset.status === 'unpublished';
                           break;
                         default:
                           matchesPublishCombined = true;
@@ -1569,10 +1598,286 @@ export default function NewTaskPage(): React.ReactElement {
 
                             {/* Publish Status */}
                             <td className="px-4 py-4 text-center">
-                              {asset.isPublished ? (
+                              {asset.status === 'published' ? (
                                 <div className="text-center">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                                  <span
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap cursor-pointer hover:bg-green-200 transition-colors"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      // Create a temporary feedback text element
+                                      const feedbackText = document.createElement('div');
+                                      feedbackText.textContent = '✓ 已复制';
+                                      feedbackText.className = 'fixed text-xs bg-green-600 text-white px-2 py-1 rounded z-[1001] pointer-events-none';
+                                      feedbackText.style.left = `${e.pageX + 10}px`;
+                                      feedbackText.style.top = `${e.pageY - 5}px`;
+                                      feedbackText.style.opacity = '0';
+                                      feedbackText.style.transition = 'opacity 0.2s ease';
+                                      document.body.appendChild(feedbackText);
+
+                                      try {
+                                        await navigator.clipboard.writeText(asset.taskId!);
+                                        // Fade in, then fade out and remove
+                                        requestAnimationFrame(() => {
+                                          feedbackText.style.opacity = '1';
+                                          setTimeout(() => {
+                                            feedbackText.style.opacity = '0';
+                                            setTimeout(() => {
+                                              if (document.body.contains(feedbackText)) {
+                                                document.body.removeChild(feedbackText);
+                                              }
+                                            }, 200);
+                                          }, 1500);
+                                        });
+                                      } catch (error) {
+                                        console.error('复制失败:', error);
+                                        feedbackText.textContent = '✗ 复制失败';
+                                        feedbackText.style.backgroundColor = '#dc2626';
+                                        feedbackText.style.opacity = '1';
+                                        setTimeout(() => {
+                                          feedbackText.style.opacity = '0';
+                                          setTimeout(() => {
+                                            if (document.body.contains(feedbackText)) {
+                                              document.body.removeChild(feedbackText);
+                                            }
+                                          }, 200);
+                                        }, 2000);
+                                      }
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      // First check if tooltip already exists
+                                      const existingTooltip = document.querySelector(`.tooltip-published-${asset.id}`);
+                                      if (existingTooltip) return;
+
+                                      const tooltip = document.createElement('div');
+                                      tooltip.className = `fixed z-[1000] bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg max-w-xs break-words tooltip-published-${asset.id}`;
+                                      tooltip.style.left = `${e.pageX + 10}px`;
+                                      tooltip.style.top = `${e.pageY + 10}px`;
+                                      tooltip.style.position = 'fixed';
+
+                                      // Create clickable tooltip content (same as occupied logic)
+                                      tooltip.innerHTML = '';
+                                      const taskIdSpan = document.createElement('span');
+                                      taskIdSpan.textContent = asset.taskId!;
+                                      taskIdSpan.className = 'cursor-pointer underline hover:text-blue-400 select-none';
+                                      taskIdSpan.onclick = async (event) => {
+                                        event.stopPropagation();
+                                        await navigator.clipboard.writeText(asset.taskId!);
+
+                                        // Show small feedback text near cursor
+                                        const feedbackText = document.createElement('div');
+                                        feedbackText.textContent = '✓ 已复制';
+                                        feedbackText.className = 'fixed text-xs bg-green-600 text-white px-2 py-1 rounded z-[1001] pointer-events-none';
+                                        feedbackText.style.left = `${event.pageX + 10}px`;
+                                        feedbackText.style.top = `${event.pageY - 5}px`;
+                                        feedbackText.style.opacity = '0';
+                                        feedbackText.style.transition = 'opacity 0.2s ease';
+
+                                        document.body.appendChild(feedbackText);
+
+                                        // Fade in, then fade out and remove
+                                        requestAnimationFrame(() => {
+                                          feedbackText.style.opacity = '1';
+                                          setTimeout(() => {
+                                            feedbackText.style.opacity = '0';
+                                            setTimeout(() => {
+                                              if (document.body.contains(feedbackText)) {
+                                                document.body.removeChild(feedbackText);
+                                              }
+                                            }, 200);
+                                          }, 1500);
+                                        });
+                                      };
+                                      tooltip.appendChild(taskIdSpan);
+
+                                      document.body.appendChild(tooltip);
+
+                                      // Add mouse enter event to tooltip (same as occupied logic)
+                                      tooltip.addEventListener('mouseenter', () => {
+                                        // Keep tooltip visible when mouse enters it
+                                        clearTimeout((tooltip as any)._removeTimeout);
+                                      });
+
+                                      // Add mouse leave event to tooltip
+                                      tooltip.addEventListener('mouseleave', () => {
+                                        // Delay removal when mouse leaves tooltip
+                                        (tooltip as any)._removeTimeout = setTimeout(() => {
+                                          if (document.body.contains(tooltip)) {
+                                            document.body.removeChild(tooltip);
+                                          }
+                                        }, 200);
+                                      });
+
+                                      const handleMouseLeave = (leaveEvent: MouseEvent) => {
+                                        // Check if mouse is moving towards tooltip
+                                        const tooltipRect = tooltip.getBoundingClientRect();
+                                        const mouseX = leaveEvent.clientX;
+                                        const mouseY = leaveEvent.clientY;
+
+                                        // Give some buffer around tooltip for mouse movement
+                                        const extendedRect = {
+                                          left: tooltipRect.left - 10,
+                                          right: tooltipRect.right + 10,
+                                          top: tooltipRect.top - 10,
+                                          bottom: tooltipRect.bottom + 10
+                                        };
+
+                                        const mouseInExtended_area = mouseX >= extendedRect.left &&
+                                                                     mouseX <= extendedRect.right &&
+                                                                     mouseY >= extendedRect.top &&
+                                                                     mouseY <= extendedRect.bottom;
+
+                                        if (!mouseInExtended_area) {
+                                          // Only remove if mouse is not moving towards tooltip
+                                          (tooltip as any)._removeTimeout = setTimeout(() => {
+                                            if (document.body.contains(tooltip)) {
+                                              document.body.removeChild(tooltip);
+                                            }
+                                          }, 300);
+                                        }
+                                      };
+
+                                      e.currentTarget?.addEventListener('mouseleave', handleMouseLeave);
+
+                                      // Store event listeners for cleanup
+                                      (e.currentTarget as any)._currentTooltip = tooltip;
+                                      (e.currentTarget as any)._handleMouseLeave = handleMouseLeave;
+                                    }}
+                                  >
                                     已发布
+                                  </span>
+                                  {asset.publishedPlatforms.length > 0 && (
+                                    <span className="block text-xs text-gray-500 mt-1 whitespace-nowrap">
+                                      {asset.publishedPlatforms.slice(0, 2).join('/')}
+                                      {asset.publishedPlatforms.length > 2 && '+' + (asset.publishedPlatforms.length - 2)}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : asset.status === 'occupied' ? (
+                                <div className="text-center">
+                                  <span
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap cursor-pointer hover:bg-blue-200 transition-colors"
+                                    onMouseEnter={(e) => {
+                                      // First check if tooltip already exists
+                                      const existingTooltip = document.querySelector(`.tooltip-${asset.id}`);
+                                      if (existingTooltip) return;
+
+                                      const tooltip = document.createElement('div');
+                                      tooltip.className = `fixed z-[1000] bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg max-w-xs break-words tooltip-${asset.id}`;
+                                      tooltip.style.left = `${e.pageX + 10}px`;
+                                      tooltip.style.top = `${e.pageY + 10}px`;
+                                      tooltip.style.position = 'fixed';
+
+                                      // Create clickable task IDs
+                                      const createTooltipContent = () => {
+                                        tooltip.innerHTML = '';
+                                        const prefix = document.createElement('span');
+                                        prefix.textContent = '占用：';
+                                        prefix.style.color = '#d1d5db'; // Light gray
+                                        tooltip.appendChild(prefix);
+
+                                        asset.occupiedTasks.forEach((taskId, index) => {
+                                          if (index > 0) {
+                                            const space = document.createElement('span');
+                                            space.textContent = '  ';
+                                            tooltip.appendChild(space);
+                                          }
+
+                                          const taskIdSpan = document.createElement('span');
+                                          taskIdSpan.textContent = taskId;
+                                          taskIdSpan.className = 'cursor-pointer underline hover:text-blue-400 select-none';
+                                          taskIdSpan.style.color = '#3b82f6';
+                                          taskIdSpan.onclick = async (event) => {
+                                            event.stopPropagation();
+                                            await navigator.clipboard.writeText(taskId);
+
+                                            // Show small feedback text near cursor
+                                            const feedbackText = document.createElement('div');
+                                            feedbackText.textContent = '✓ 已复制';
+                                            feedbackText.className = 'fixed text-xs bg-green-600 text-white px-2 py-1 rounded z-[1001] pointer-events-none';
+                                            feedbackText.style.left = `${event.pageX + 10}px`;
+                                            feedbackText.style.top = `${event.pageY - 5}px`;
+                                            feedbackText.style.opacity = '0';
+                                            feedbackText.style.transition = 'opacity 0.2s ease';
+
+                                            document.body.appendChild(feedbackText);
+
+                                            // Fade in, then fade out and remove
+                                            requestAnimationFrame(() => {
+                                              feedbackText.style.opacity = '1';
+                                              setTimeout(() => {
+                                                feedbackText.style.opacity = '0';
+                                                setTimeout(() => {
+                                                  if (document.body.contains(feedbackText)) {
+                                                    document.body.removeChild(feedbackText);
+                                                  }
+                                                }, 200);
+                                              }, 1500);
+                                            });
+                                          };
+                                          tooltip.appendChild(taskIdSpan);
+                                        });
+                                      };
+
+                                      createTooltipContent();
+                                      document.body.appendChild(tooltip);
+
+                                      // Add mouse enter event to tooltip
+                                      tooltip.addEventListener('mouseenter', () => {
+                                        // Keep tooltip visible when mouse enters it
+                                        clearTimeout((tooltip as any)._removeTimeout);
+                                      });
+
+                                      // Add mouse leave event to tooltip
+                                      tooltip.addEventListener('mouseleave', () => {
+                                        // Delay removal when mouse leaves tooltip
+                                        (tooltip as any)._removeTimeout = setTimeout(() => {
+                                          if (document.body.contains(tooltip)) {
+                                            document.body.removeChild(tooltip);
+                                          }
+                                        }, 200);
+                                      });
+
+                                      const handleMouseLeave = (leaveEvent: MouseEvent) => {
+                                        // Check if mouse is moving towards tooltip
+                                        const tooltipRect = tooltip.getBoundingClientRect();
+                                        const mouseX = leaveEvent.clientX;
+                                        const mouseY = leaveEvent.clientY;
+
+                                        // Give some buffer around tooltip for mouse movement
+                                        const extendedRect = {
+                                          left: tooltipRect.left - 10,
+                                          right: tooltipRect.right + 10,
+                                          top: tooltipRect.top - 10,
+                                          bottom: tooltipRect.bottom + 10
+                                        };
+
+                                        const mouseInExtended_area = mouseX >= extendedRect.left &&
+                                                                     mouseX <= extendedRect.right &&
+                                                                     mouseY >= extendedRect.top &&
+                                                                     mouseY <= extendedRect.bottom;
+
+                                        if (!mouseInExtended_area) {
+                                          // Only remove if mouse is not moving towards tooltip
+                                          (tooltip as any)._removeTimeout = setTimeout(() => {
+                                            if (document.body.contains(tooltip)) {
+                                              document.body.removeChild(tooltip);
+                                            }
+                                          }, 300);
+                                        }
+                                      };
+
+                                      e.currentTarget?.addEventListener('mouseleave', handleMouseLeave);
+
+                                      // Store event listeners for cleanup
+                                      (e.currentTarget as any)._currentTooltip = tooltip;
+                                      (e.currentTarget as any)._handleMouseLeave = handleMouseLeave;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      // Clean up any existing tooltip (this won't be called due to the listener above)
+                                      // This is just a placeholder to maintain event flow
+                                    }}
+                                  >
+                                    已占用
                                   </span>
                                   {asset.publishedPlatforms.length > 0 && (
                                     <span className="block text-xs text-gray-500 mt-1 whitespace-nowrap">
