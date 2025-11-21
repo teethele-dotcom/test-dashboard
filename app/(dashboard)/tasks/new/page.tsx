@@ -64,6 +64,18 @@ const generateMockAssets = () => {
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
     const createdAt = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
 
+    // Random publish data
+    const isPublished = Math.random() > 0.3; // 70% chance published
+    const publishedPlatforms = ['微信', '抖音', '微博'];
+    const randomPlatforms = isPublished ?
+      publishedPlatforms.filter(() => Math.random() > 0.4) : // Random subset
+      [];
+
+    // If no platforms selected but is published, publish to at least one
+    if (isPublished && randomPlatforms.length === 0) {
+      randomPlatforms.push(publishedPlatforms[Math.floor(Math.random() * publishedPlatforms.length)]);
+    }
+
     assets.push({
       id: i.toString(),
       name: `${category}${Math.random().toString(36).substring(2, 8)}${type.charAt(0).toUpperCase() + type.slice(1)}_${i}`,
@@ -74,7 +86,9 @@ const generateMockAssets = () => {
       content,
       creator,
       createdAt: createdAt.toISOString(),
-      imageUrl: type === 'image' ? `/api/placeholder/80/60?text=${type.charAt(0).toUpperCase()}${i}` : null
+      imageUrl: type === 'image' ? `/api/placeholder/80/60?text=${type.charAt(0).toUpperCase()}${i}` : null,
+      isPublished,
+      publishedPlatforms: randomPlatforms
     });
   }
   return assets;
@@ -97,6 +111,9 @@ export default function NewTaskPage(): React.ReactElement {
   const [filterType, setFilterType] = useState('all');
   const [filterCategories, setFilterCategories] = useState<string>('all');
   const [filterTags, setFilterTags] = useState<string>('all');
+
+  // Merged filter state for publish status and platforms
+  const [filterPublishCombined, setFilterPublishCombined] = useState<string>('all');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -315,15 +332,37 @@ export default function NewTaskPage(): React.ReactElement {
         if (!isSelected) return false;
       }
 
-      const matchesSearch = searchQuery === '' ||
-        asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
-      const matchesType = filterType === 'all' || asset.type === filterType;
-      const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
-      const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
-      return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+                  const matchesSearch = searchQuery === '' ||
+                    asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    asset.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    asset.creator.toLowerCase().includes(searchQuery.toLowerCase());
+                  const matchesSpace = filterSpace === 'all' || asset.space === filterSpace;
+                  const matchesType = filterType === 'all' || asset.type === filterType;
+                  const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
+                  const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
+
+                  // Unified publish status and platform filtering
+                  let matchesPublishCombined = true;
+                  if (filterPublishCombined !== 'all') {
+                    switch (filterPublishCombined) {
+                      case 'wechat-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微信');
+                        break;
+                      case 'douyin-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('抖音');
+                        break;
+                      case 'weibo-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微博');
+                        break;
+                      case 'unpublished':
+                        matchesPublishCombined = !asset.isPublished;
+                        break;
+                      default:
+                        matchesPublishCombined = true;
+                    }
+                  }
+
+                  return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags && matchesPublishCombined;
     });
 
     // Get selected assets that might not match current filters
@@ -378,7 +417,29 @@ export default function NewTaskPage(): React.ReactElement {
       const matchesType = filterType === 'all' || asset.type === filterType;
       const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
       const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
-      return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+
+      // Unified publish status and platform filtering
+      let matchesPublishCombined = true;
+      if (filterPublishCombined !== 'all') {
+        switch (filterPublishCombined) {
+          case 'wechat-published':
+            matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微信');
+            break;
+          case 'douyin-published':
+            matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('抖音');
+            break;
+          case 'weibo-published':
+            matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微博');
+            break;
+          case 'unpublished':
+            matchesPublishCombined = !asset.isPublished;
+            break;
+          default:
+            matchesPublishCombined = true;
+        }
+      }
+
+      return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags && matchesPublishCombined;
     });
 
     // Get selected assets that might not match current filters
@@ -1210,15 +1271,12 @@ export default function NewTaskPage(): React.ReactElement {
       {/* Material Selection Modal */}
       {isMaterialModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full mx-6 h-[85vh] flex flex-col overflow-hidden">
             {/* Header - Fixed */}
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">选择任务素材</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    选择任务相关的素材资源
-                  </p>
                 </div>
                 <button
                   onClick={() => setIsMaterialModalOpen(false)}
@@ -1231,7 +1289,7 @@ export default function NewTaskPage(): React.ReactElement {
 
             {/* Comprehensive Search and Filters - Fixed */}
             <div className="p-4 border-b bg-gray-50">
-              <div className="grid grid-cols-5 gap-3 mb-4">
+              <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-gray-700">综合搜索</label>
                   <Input
@@ -1269,6 +1327,22 @@ export default function NewTaskPage(): React.ReactElement {
                   </select>
                 </div>
                 <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">标签</label>
+                  <select
+                    value={filterTags}
+                    onChange={(e) => setFilterTags(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">全部标签</option>
+                    <option value="热销">热销</option>
+                    <option value="新品">新品</option>
+                    <option value="明星产品">明星产品</option>
+                    <option value="客户好评">客户好评</option>
+                    <option value="技术支持">技术支持</option>
+                    <option value="创意设计">创意设计</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
                   <label className="text-xs font-medium text-gray-700">分类</label>
                   <select
                     value={filterCategories}
@@ -1286,70 +1360,27 @@ export default function NewTaskPage(): React.ReactElement {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-700">标签</label>
+                  <label className="text-xs font-medium text-gray-700">发布状态</label>
                   <select
-                    value={filterTags}
-                    onChange={(e) => setFilterTags(e.target.value)}
+                    value={filterPublishCombined}
+                    onChange={(e) => setFilterPublishCombined(e.target.value)}
                     className="w-full px-2 py-1 border rounded text-sm bg-white h-8 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="all">全部标签</option>
-                    <option value="热销">热销</option>
-                    <option value="新品">新品</option>
-                    <option value="明星产品">明星产品</option>
-                    <option value="客户好评">客户好评</option>
-                    <option value="技术支持">技术支持</option>
-                    <option value="创意设计">创意设计</option>
+                    <option value="all">全部素材</option>
+                    <optgroup label="已发布">
+                      <option value="wechat-published">微信</option>
+                      <option value="douyin-published">抖音</option>
+                      <option value="weibo-published">微博</option>
+                    </optgroup>
+                    <option value="unpublished">未发布</option>
                   </select>
                 </div>
               </div>
-
-              {/* Additional Filters */}
-              <div className="flex items-center">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showOnlySelected}
-                    onChange={(e) => setShowOnlySelected(e.target.checked)}
-                    className="mr-2 h-4 w-4 text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium">仅显示已选中</span>
-                </label>
-              </div>
             </div>
 
-            {/* Table Container and Paginator */}
-            <div className="flex flex-col flex-1 min-h-0">
-              {/* Table Content */}
-              <div className="flex-1 overflow-auto">
-                {/* Table Header - Sticky within scroll container */}
-                <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-100 border-b text-xs font-medium text-gray-700 sticky top-0 z-10">
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        if (checked) {
-                          selectAllCurrentPage();
-                        } else {
-                          deselectAllCurrentPage();
-                        }
-                      }}
-                      className="h-4 w-4 text-blue-600 rounded"
-                    />
-                  </div>
-                  <div className="col-span-1">类型</div>
-                  <div className="col-span-1">图片</div>
-                  <div className="col-span-3">标题</div>
-                  <div className="col-span-3">正文</div>
-                  <div className="col-span-1">标签</div>
-                  <div className="col-span-1">分类</div>
-                  <div className="col-span-1">
-                    创建人及时间
-                  </div>
-                </div>
-
-                {/* Table Body */}
-                <div className="divide-y">
+            {/* Enhanced Material Selection Table */}
+            <div className="flex-1 overflow-x-auto bg-white">
+              <div className="min-w-0">
                 {(() => {
                   // 过滤符合当前筛选条件的素材
                   let allVisibleAssets = availableAssets.filter(asset => {
@@ -1361,7 +1392,29 @@ export default function NewTaskPage(): React.ReactElement {
                     const matchesType = filterType === 'all' || asset.type === filterType;
                     const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
                     const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
-                    return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+
+                    // Unified publish status and platform filtering
+                    let matchesPublishCombined = true;
+                    if (filterPublishCombined !== 'all') {
+                      switch (filterPublishCombined) {
+                        case 'wechat-published':
+                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微信');
+                          break;
+                        case 'douyin-published':
+                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('抖音');
+                          break;
+                        case 'weibo-published':
+                          matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微博');
+                          break;
+                        case 'unpublished':
+                          matchesPublishCombined = !asset.isPublished;
+                          break;
+                        default:
+                          matchesPublishCombined = true;
+                      }
+                    }
+
+                    return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags && matchesPublishCombined;
                   });
 
                   // 如果开启了"仅显示已选中"，则只显示选中的素材，并按选择顺序排序
@@ -1377,9 +1430,11 @@ export default function NewTaskPage(): React.ReactElement {
 
                   if (allVisibleAssets.length === 0) {
                     return (
-                      <div className="col-span-12 text-center py-12">
-                        <p className="text-gray-500">没有找到匹配的素材</p>
-                        <p className="text-sm text-gray-400 mt-1">尝试调整搜索条件</p>
+                      <div className="flex items-center justify-center py-12 text-gray-500">
+                        <div className="text-center">
+                          <p className="text-lg mb-2">没有找到匹配的素材</p>
+                          <p className="text-sm text-gray-400">尝试调整搜索条件</p>
+                        </div>
                       </div>
                     );
                   }
@@ -1391,106 +1446,180 @@ export default function NewTaskPage(): React.ReactElement {
                   const endIndex = startIndex + itemsPerPage;
                   const currentAssets = allVisibleAssets.slice(startIndex, endIndex);
 
-                  return currentAssets.map((asset) => (
-                    <div
-                      key={asset.id}
-                      className={`grid grid-cols-12 gap-3 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        selectedMaterials.includes(asset.name) ? 'bg-blue-50' : ''
-                      }`}
-                      onClick={(e) => {
-                        // Only toggle if not clicking on checkbox (avoid double-trigger)
-                        if ((e.target as HTMLInputElement).type !== 'checkbox') {
-                          toggleMaterialSelection(asset);
-                        }
-                      }}
-                    >
-                      {/* Checkbox */}
-                      <div className="col-span-1 flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedMaterials.includes(asset.name)}
-                          onChange={() => toggleMaterialSelection(asset)}
-                          className="h-4 w-4 text-blue-600 rounded"
-                          onClick={(e) => e.stopPropagation()} // Prevent row onClick when clicking checkbox
-                        />
-                      </div>
+                  return (
+                    <table className="w-full border-collapse">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
+                        <tr className="border-b border-gray-200">
+                          <th className="px-3 py-4 text-center w-10">
+                            <input
+                              type="checkbox"
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                if (checked) {
+                                  selectAllCurrentPage();
+                                } else {
+                                  deselectAllCurrentPage();
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                          </th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-14">类型</th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-14">封面</th>
+                          <th className="px-4 py-4 text-left text-sm font-medium text-gray-600 flex-1 min-w-[280px]">标题与内容</th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-24">标签</th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-18">分类</th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-22">发布状态</th>
+                          <th className="px-3 py-4 text-center text-sm font-medium text-gray-600 w-24">创建信息</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {currentAssets.map((asset) => (
+                          <tr
+                            key={asset.id}
+                            className={`hover:bg-gray-50 cursor-pointer transition-colors ${
+                              selectedMaterials.includes(asset.name) ? 'bg-blue-50' : ''
+                            }`}
+                            onClick={(e) => {
+                              // Only toggle if not clicking on checkbox (avoid double-trigger)
+                              if ((e.target as HTMLInputElement).type !== 'checkbox') {
+                                toggleMaterialSelection(asset);
+                              }
+                            }}
+                          >
+                            {/* Checkbox */}
+                            <td className="px-4 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedMaterials.includes(asset.name)}
+                                onChange={() => toggleMaterialSelection(asset)}
+                                className="h-4 w-4 text-blue-600 rounded"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </td>
 
-                      {/* Type */}
-                      <div className="col-span-1 flex items-center justify-center">
-                        <span className="text-xs font-medium px-2 py-1 bg-orange-100 text-orange-800 rounded-full whitespace-nowrap">
-                          {asset.type === 'video' ? '视频' : '图文'}
-                        </span>
-                      </div>
+                            {/* Type */}
+                            <td className="px-4 py-4 text-center">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
+                                {asset.type === 'video' ? '视频' : '图文'}
+                              </span>
+                            </td>
 
-                      {/* Image */}
-                      <div className="col-span-1 flex items-center justify-center">
-                        {asset.type === 'image' ? (
-                          <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-700">图</span>
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-500 uppercase">
-                              {asset.type.charAt(0)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                            {/* Cover/Thumbnail */}
+                            <td className="px-4 py-4 text-center">
+                              {asset.type === 'image' ? (
+                                <img
+                                  src={asset.imageUrl || '/placeholder.svg'}
+                                  alt={asset.name}
+                                  className="w-10 h-8 object-cover rounded border mx-auto"
+                                />
+                              ) : asset.type === 'video' ? (
+                                <div className="w-10 h-8 bg-gray-300 rounded flex items-center justify-center mx-auto border">
+                                  <span className="text-xs font-medium text-gray-600">视频</span>
+                                </div>
+                              ) : (
+                                <div className="w-10 h-8 bg-gray-100 rounded flex items-center justify-center mx-auto border">
+                                  <span className="text-xs font-medium text-gray-500 uppercase">
+                                    {asset.type.charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
 
-                      {/* Title */}
-                      <div className="col-span-3 flex items-center">
-                        <div className="text-sm font-medium truncate" title={asset.name}>
-                          {asset.name}
-                        </div>
-                      </div>
+                            {/* Title and Content combined */}
+                            <td className="px-4 py-4">
+                              <div className="space-y-1 min-w-[300px]">
+                                {/* Title - First row */}
+                                <div className="text-sm font-medium truncate" title={asset.name}>
+                                  {asset.name}
+                                </div>
+                                {/* Content - Second row, limited to 30 chars */}
+                                <div className="text-xs text-gray-600 cursor-help"
+                                     title={asset.content}
+                                     onMouseEnter={(e) => {
+                                       // Create tooltip on hover
+                                       const tooltip = document.createElement('div');
+                                       tooltip.className = 'fixed z-50 bg-gray-900 text-white text-sm p-3 rounded-lg shadow-lg max-w-md break-words';
+                                       tooltip.textContent = asset.content;
+                                       tooltip.style.left = `${e.pageX + 10}px`;
+                                       tooltip.style.top = `${e.pageY + 10}px`;
+                                       document.body.appendChild(tooltip);
 
-                      {/* Content/Description */}
-                      <div className="col-span-3 flex items-center">
-                        <div className="text-xs text-gray-600 line-clamp-2 max-w-full" title={asset.content}>
-                          {asset.content}
-                        </div>
-                      </div>
+                                       const handleMouseLeave = () => {
+                                         if (document.body.contains(tooltip)) {
+                                           document.body.removeChild(tooltip);
+                                         }
+                                       };
 
-                      {/* Tags */}
-                      <div className="col-span-1 flex items-center">
-                        <div className="flex flex-wrap gap-1">
-                          {asset.tags.slice(0, 2).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {asset.tags.length > 2 && (
-                            <span className="text-xs text-gray-500"> +{asset.tags.length - 2}</span>
-                          )}
-                        </div>
-                      </div>
+                                       e.currentTarget?.addEventListener('mouseleave', handleMouseLeave);
+                                     }}>
+                                  {asset.content.length > 30 ? asset.content.substring(0, 30) + '...' : asset.content}
+                                </div>
+                              </div>
+                            </td>
 
-                      {/* Classification/Type */}
-                      <div className="col-span-1 flex items-center">
-                        <span className="text-xs text-gray-600">
-                          {asset.type === 'image' ? '图片' :
-                            asset.type === 'video' ? '视频' :
-                            asset.type === 'document' ? '文档' :
-                            asset.type === 'text' ? '文字' :
-                            asset.type === 'presentation' ? '演示' :
-                            asset.type === 'audio' ? '音频' : asset.type}
-                        </span>
-                      </div>
+                            {/* Tags */}
+                            <td className="px-4 py-4 text-center">
+                              <div className="flex flex-wrap gap-1 justify-center">
+                                {asset.tags.slice(0, 2).map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                                {asset.tags.length > 2 && (
+                                  <span className="text-xs text-gray-500">+{asset.tags.length - 2}</span>
+                                )}
+                              </div>
+                            </td>
 
-                      {/* Creator and Time */}
-                      <div className="col-span-1 flex items-center">
-                        <div className="text-xs text-gray-600 text-center">
-                          <div className="font-medium">{asset.creator}</div>
-                          <div>{new Date(asset.createdAt).toLocaleDateString('zh-CN')}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ));
+                            {/* Category */}
+                            <td className="px-4 py-4 text-center">
+                              <span className="text-xs text-gray-600 whitespace-nowrap">
+                                {asset.category}
+                              </span>
+                            </td>
+
+                            {/* Publish Status */}
+                            <td className="px-4 py-4 text-center">
+                              {asset.isPublished ? (
+                                <div className="text-center">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                                    已发布
+                                  </span>
+                                  {asset.publishedPlatforms.length > 0 && (
+                                    <span className="block text-xs text-gray-500 mt-1 whitespace-nowrap">
+                                      {asset.publishedPlatforms.slice(0, 2).join('/')}
+                                      {asset.publishedPlatforms.length > 2 && '+' + (asset.publishedPlatforms.length - 2)}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 whitespace-nowrap">
+                                  未发布
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Creator and Date combined - 创建信息 */}
+                            <td className="px-4 py-4 text-center">
+                              <div>
+                                <div className="text-xs text-gray-600 font-medium whitespace-nowrap mb-1">
+                                  {asset.creator}
+                                </div>
+                                <div className="text-xs text-gray-500 whitespace-nowrap">
+                                  {new Date(asset.createdAt).toLocaleDateString('zh-CN')}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
                 })()}
-                </div>
               </div>
 
               {/* Pagination */}
@@ -1510,7 +1639,29 @@ export default function NewTaskPage(): React.ReactElement {
                   const matchesType = filterType === 'all' || asset.type === filterType;
                   const matchesCategory = filterCategories === 'all' || asset.category === filterCategories;
                   const matchesTags = filterTags === 'all' || asset.tags.some(tag => tag === filterTags);
-                  return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags;
+
+                  // Unified publish status and platform filtering
+                  let matchesPublishCombined = true;
+                  if (filterPublishCombined !== 'all') {
+                    switch (filterPublishCombined) {
+                      case 'wechat-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微信');
+                        break;
+                      case 'douyin-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('抖音');
+                        break;
+                      case 'weibo-published':
+                        matchesPublishCombined = asset.isPublished && asset.publishedPlatforms.includes('微博');
+                        break;
+                      case 'unpublished':
+                        matchesPublishCombined = !asset.isPublished;
+                        break;
+                      default:
+                        matchesPublishCombined = true;
+                    }
+                  }
+
+                  return matchesSearch && matchesSpace && matchesType && matchesCategory && matchesTags && matchesPublishCombined;
                 });
 
                 const selectedAssets = availableAssets.filter(asset =>
@@ -1637,8 +1788,22 @@ export default function NewTaskPage(): React.ReactElement {
 
             {/* Footer - Fixed */}
             <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                已选择 {selectedMaterials.length} 个素材
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-600">
+                  已选择 {selectedMaterials.length} 个素材
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show-only-selected-footer"
+                    checked={showOnlySelected}
+                    onChange={(e) => setShowOnlySelected(e.target.checked)}
+                    className="mr-2 h-4 w-4 text-blue-600 rounded"
+                  />
+                  <label htmlFor="show-only-selected-footer" className="text-sm font-medium cursor-pointer">
+                    仅显示已选中
+                  </label>
+                </div>
               </div>
               <div className="flex space-x-3">
                 <Button
