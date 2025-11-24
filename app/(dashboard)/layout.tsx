@@ -84,6 +84,13 @@ function DesktopNav() {
         >
           <FileText className="h-5 w-5" />
         </NavItem>
+
+        <NavItem
+          href="/budget-sources"
+          label="预算来源"
+        >
+          <Settings className="h-5 w-5" />
+        </NavItem>
       </nav>
       <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
         <Tooltip>
@@ -134,6 +141,13 @@ function MobileNav() {
           >
             <FileText className="h-5 w-5" />
             任务规则
+          </Link>
+          <Link
+            href="/budget-sources"
+            className="flex items-center gap-4 px-2.5 text-foreground"
+          >
+            <Settings className="h-5 w-5" />
+            预算来源
           </Link>
         </nav>
       </SheetContent>

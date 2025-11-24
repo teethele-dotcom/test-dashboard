@@ -159,24 +159,29 @@ export default function NewTaskPage(): React.ReactElement {
     claimEndTime: '',
     taskImage: '/placeholder.svg', // default image
 
+    // Mandatory reward fields - moved budgetSource here
+    budgetSource: '',
+    totalTasks: '',
+    rewardType: '积分', // 积分, 优惠券, 商品
+
+    // Points related fields
+    pointsBudget: '',
+    basicRewardPoints: '10',
+
+    // Coupon specific fields
+    basicRewardCouponType: '', // coupon type when rewardType is 优惠券
+
+    // Page display settings
+    displayModuleTitle: '积分奖励说明',
+    displayBasicValue: '基础积分：根据任务完成度发放',
+    displayAdvancedValue: '进阶积分：根据作品质量和原创性额外奖励',
+    displayMaxPoints: '100', // when rewardType is 积分
+    displayStatementTitle: '用户声明',
+    displayStatementDescription: '我承诺提交的作品为本人原创，不涉及盗用他人内容，同时遵守平台相关规范。',
+
     // Task rules (moved to end)
     ruleDescription: '1. 参与者需按照任务要求完成相应操作\n2. 作品质量需达到合格标准\n3. 需在规定时间内提交作品\n4. 系统会进行自动筛选审核',
     executionFlowDescription: '1. 用户领取任务后，按任务要求完成内容创作\n2. 提交作品至平台系统\n3. 系统自动审核通过后，发放任务奖励\n4. 奖励积分自动到账，可在个人中心查看',
-
-    // Mandatory reward fields
-    budgetSource: '',
-    pointsBudget: '',
-    totalTasks: '',
-    basicRewardPoints: '10',
-
-    // Points explanation
-    pointsModuleTitle: '积分奖励说明',
-    pointsBasicValue: '基础积分：根据任务完成度发放',
-    pointsAdvancedValue: '进阶积分：根据作品质量和原创性额外奖励',
-
-    // Statement/Disclaimer
-    statementTitle: '用户声明',
-    statementDescription: '我承诺提交的作品为本人原创，不涉及盗用他人内容，同时遵守平台相关规范。',
 
     // Extra rewards (default off)
     enableExtraRewards: 'false',
@@ -197,6 +202,11 @@ export default function NewTaskPage(): React.ReactElement {
     emotionRequirement: '',
 
     // Legacy fields for compatibility
+    pointsModuleTitle: '',
+    pointsBasicValue: '',
+    pointsAdvancedValue: '',
+    statementTitle: '',
+    statementDescription: '',
     title: '',
     description: '',
     platform: '',
@@ -589,22 +599,42 @@ export default function NewTaskPage(): React.ReactElement {
                 </div>
               </div>
 
-              {/* Task Cycle - Mandatory */}
-              <div className="space-y-2">
-                <label htmlFor="taskCycle" className="text-sm font-medium">任务周期 *</label>
-                <select
-                  id="taskCycle"
-                  value={formData.taskCycle}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('taskCycle', e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">选择任务周期</option>
-                  <option value="单次任务">单次任务</option>
-                  <option value="每日任务">每日任务</option>
-                  <option value="每周任务">每周任务</option>
-                  <option value="每月任务">每月任务</option>
-                  <option value="长期任务">长期任务</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Task Cycle - Mandatory */}
+                <div className="space-y-2">
+                  <label htmlFor="taskCycle" className="text-sm font-medium">任务周期 *</label>
+                  <select
+                    id="taskCycle"
+                    value={formData.taskCycle}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('taskCycle', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">选择任务周期</option>
+                    <option value="单次任务">单次任务</option>
+                    <option value="每日任务">每日任务</option>
+                    <option value="每周任务">每周任务</option>
+                    <option value="每月任务">每月任务</option>
+                    <option value="长期任务">长期任务</option>
+                  </select>
+                </div>
+
+                {/* Budget Source - Mandatory */}
+                <div className="space-y-2">
+                  <label htmlFor="budgetSource" className="text-sm font-medium">预算来源 *</label>
+                  <select
+                    id="budgetSource"
+                    value={formData.budgetSource}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('budgetSource', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">选择预算来源</option>
+                    <option value="公司预算">公司预算</option>
+                    <option value="项目专项资金">项目专项资金</option>
+                    <option value="活动营销预算">活动营销预算</option>
+                    <option value="部门经费">部门经费</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </div>
               </div>
 
               {/* Task Claim Times - Mandatory */}
@@ -670,6 +700,43 @@ export default function NewTaskPage(): React.ReactElement {
                     />
                     公司
                   </label>
+                </div>
+              </div>
+
+              {/* Task Rules */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">任务规则配置</h3>
+
+                <div className="space-y-2">
+                  <label htmlFor="ruleDescription" className="text-sm font-medium">规则描述 *</label>
+                  <textarea
+                    id="ruleDescription"
+                    value={formData.ruleDescription}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('ruleDescription', e.target.value)}
+                    placeholder="请输入任务规则描述"
+                    rows={6}
+                    className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    💡 明确告知参与者任务的具体要求和标准
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="executionFlowDescription" className="text-sm font-medium">执行流程说明 *</label>
+                  <textarea
+                    id="executionFlowDescription"
+                    value={formData.executionFlowDescription}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('executionFlowDescription', e.target.value)}
+                    placeholder="请输入任务执行流程说明"
+                    rows={6}
+                    className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    💡 详细说明参与者需要完成的任务步骤
+                  </p>
                 </div>
               </div>
 
@@ -754,24 +821,45 @@ export default function NewTaskPage(): React.ReactElement {
       case 1:
         return (
           <div className="space-y-6">
-            {/* Budget and Basic Rewards */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Budget Source - Mandatory */}
+              {/* Reward Type - Mandatory */}
               <div className="space-y-2">
-                <label htmlFor="budgetSource" className="text-sm font-medium">预算来源 *</label>
-                <select
-                  id="budgetSource"
-                  value={formData.budgetSource}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('budgetSource', e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">选择预算来源</option>
-                  <option value="公司预算">公司预算</option>
-                  <option value="项目专项资金">项目专项资金</option>
-                  <option value="活动营销预算">活动营销预算</option>
-                  <option value="部门经费">部门经费</option>
-                  <option value="其他">其他</option>
-                </select>
+                <label className="text-sm font-medium">奖励内容 *</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="rewardType"
+                      value="积分"
+                      checked={formData.rewardType === '积分'}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('rewardType', e.target.value)}
+                      className="mr-2"
+                    />
+                    积分
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="rewardType"
+                      value="优惠券"
+                      checked={formData.rewardType === '优惠券'}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('rewardType', e.target.value)}
+                      className="mr-2"
+                    />
+                    优惠券
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="rewardType"
+                      value="商品"
+                      checked={formData.rewardType === '商品'}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('rewardType', e.target.value)}
+                      className="mr-2"
+                    />
+                    商品
+                  </label>
+                </div>
               </div>
 
               {/* Task Total - Mandatory */}
@@ -788,24 +876,8 @@ export default function NewTaskPage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Points Budget - Mandatory */}
-              <div className="space-y-2">
-                <label htmlFor="pointsBudget" className="text-sm font-medium">积分预算 *</label>
-                <Input
-                  id="pointsBudget"
-                  type="number"
-                  value={formData.pointsBudget}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('pointsBudget', e.target.value)}
-                  placeholder="请输入积分预算金额"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  💡 设置任务完成后用户可获得的积分奖励金额
-                </p>
-              </div>
-
-              {/* Basic Reward Points - Mandatory */}
+            {/* Basic Reward display */}
+            {formData.rewardType === '积分' && (
               <div className="space-y-2">
                 <label htmlFor="basicRewardPoints" className="text-sm font-medium">基础奖励积分 *</label>
                 <Input
@@ -820,109 +892,241 @@ export default function NewTaskPage(): React.ReactElement {
                   💡 基础完成度可获得的积分奖励
                 </p>
               </div>
-            </div>
+            )}
 
-            {/* Points Explanation */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">积分说明</h3>
-
+            {formData.rewardType === '优惠券' && (
               <div className="space-y-2">
-                <label htmlFor="pointsModuleTitle" className="text-sm font-medium">模块标题</label>
+                <label htmlFor="basicRewardCouponType" className="text-sm font-medium">基础奖励 *</label>
+                <select
+                  id="basicRewardCouponType"
+                  value={formData.basicRewardCouponType}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('basicRewardCouponType', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">选择优惠券类型</option>
+                  <option value="折扣券">折扣券</option>
+                  <option value="满减券">满减券</option>
+                  <option value="免邮券">免邮券</option>
+                  <option value="换购券">换购券</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+            )}
+
+            {formData.rewardType === '商品' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">基础奖励 *</label>
                 <Input
-                  id="pointsModuleTitle"
-                  value={formData.pointsModuleTitle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('pointsModuleTitle', e.target.value)}
-                  placeholder="积分奖励说明"
+                  value="礼品商品"
+                  readOnly
+                  className="bg-gray-50"
                 />
+                <p className="text-xs text-muted-foreground">
+                  💡 商品类型奖励将在后续步骤中详细配置
+                </p>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="pointsBasicValue" className="text-sm font-medium">基础积分</label>
-                  <textarea
-                    id="pointsBasicValue"
-                    value={formData.pointsBasicValue}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('pointsBasicValue', e.target.value)}
-                    placeholder="基础积分说明"
-                    rows={3}
-                    className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="pointsAdvancedValue" className="text-sm font-medium">进阶积分</label>
-                  <textarea
-                    id="pointsAdvancedValue"
-                    value={formData.pointsAdvancedValue}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('pointsAdvancedValue', e.target.value)}
-                    placeholder="进阶积分说明"
-                    rows={3}
-                    className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Statement/Disclaimer */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">声明</h3>
-
+            {/* Points Budget - Only show for points rewards */}
+            {formData.rewardType === '积分' && (
               <div className="space-y-2">
-                <label htmlFor="statementTitle" className="text-sm font-medium">声明标题</label>
+                <label htmlFor="pointsBudget" className="text-sm font-medium">积分预算 *</label>
                 <Input
-                  id="statementTitle"
-                  value={formData.statementTitle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('statementTitle', e.target.value)}
-                  placeholder="用户声明"
+                  id="pointsBudget"
+                  type="number"
+                  value={formData.pointsBudget}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('pointsBudget', e.target.value)}
+                  placeholder="请输入积分预算金额"
+                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  💡 设置任务完成后用户可获得的积分奖励金额
+                </p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <label htmlFor="statementDescription" className="text-sm font-medium">声明描述</label>
-                <textarea
-                  id="statementDescription"
-                  value={formData.statementDescription}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('statementDescription', e.target.value)}
-                  placeholder="声明描述内容"
-                  rows={4}
-                  className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            {/* Extra Rewards Toggle */}
+            {/* Page Display Settings */}
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.enableExtraRewards === 'true'}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      updateFormData('enableExtraRewards', e.target.checked.toString());
-                      // Reset extra reward points when disabled
-                      if (!e.target.checked) {
-                        updateFormData('extraRewardPoints', '0');
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-medium">开启额外奖励积分</span>
-                </label>
-              </div>
+              <h3 className="text-lg font-medium">页面展示设置</h3>
 
-              {formData.enableExtraRewards && (
-                <div className="space-y-2 ml-6">
-                  <label htmlFor="extraRewardPoints" className="text-sm font-medium">额外奖励积分</label>
-                  <Input
-                    id="extraRewardPoints"
-                    type="number"
-                    value={formData.extraRewardPoints}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('extraRewardPoints', e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
+              {formData.rewardType === '积分' && (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="displayMaxPoints" className="text-sm font-medium">展示最高获得积分</label>
+                    <Input
+                      id="displayMaxPoints"
+                      type="number"
+                      value={formData.displayMaxPoints}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('displayMaxPoints', e.target.value)}
+                      placeholder="100"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      💡 向用户展示可获得的最高积分奖励
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="displayModuleTitle" className="text-sm font-medium">模块标题</label>
+                    <Input
+                      id="displayModuleTitle"
+                      value={formData.displayModuleTitle}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('displayModuleTitle', e.target.value)}
+                      placeholder="积分奖励说明"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="displayBasicValue" className="text-sm font-medium">基础奖励</label>
+                      <textarea
+                        id="displayBasicValue"
+                        value={formData.displayBasicValue}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayBasicValue', e.target.value)}
+                        placeholder="基础奖励说明"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="displayAdvancedValue" className="text-sm font-medium">进阶奖励</label>
+                      <textarea
+                        id="displayAdvancedValue"
+                        value={formData.displayAdvancedValue}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayAdvancedValue', e.target.value)}
+                        placeholder="进阶奖励说明"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="displayStatementTitle" className="text-sm font-medium">声明标题</label>
+                      <Input
+                        id="displayStatementTitle"
+                        value={formData.displayStatementTitle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('displayStatementTitle', e.target.value)}
+                        placeholder="用户声明"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="displayStatementDescription" className="text-sm font-medium">声明描述</label>
+                      <textarea
+                        id="displayStatementDescription"
+                        value={formData.displayStatementDescription}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayStatementDescription', e.target.value)}
+                        placeholder="声明描述内容"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {(formData.rewardType === '优惠券' || formData.rewardType === '商品') && (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="displayModuleTitle" className="text-sm font-medium">模块标题</label>
+                    <Input
+                      id="displayModuleTitle"
+                      value={formData.displayModuleTitle}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('displayModuleTitle', e.target.value)}
+                      placeholder={`${formData.rewardType}奖励说明`}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="displayBasicValue" className="text-sm font-medium">基础奖励</label>
+                      <textarea
+                        id="displayBasicValue"
+                        value={formData.displayBasicValue}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayBasicValue', e.target.value)}
+                        placeholder="基础奖励说明"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="displayAdvancedValue" className="text-sm font-medium">进阶奖励</label>
+                      <textarea
+                        id="displayAdvancedValue"
+                        value={formData.displayAdvancedValue}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayAdvancedValue', e.target.value)}
+                        placeholder="进阶奖励说明"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="displayStatementTitle" className="text-sm font-medium">声明标题</label>
+                      <Input
+                        id="displayStatementTitle"
+                        value={formData.displayStatementTitle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('displayStatementTitle', e.target.value)}
+                        placeholder="用户声明"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="displayStatementDescription" className="text-sm font-medium">声明描述</label>
+                      <textarea
+                        id="displayStatementDescription"
+                        value={formData.displayStatementDescription}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('displayStatementDescription', e.target.value)}
+                        placeholder="声明描述内容"
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </div>
+
+            {/* Extra Rewards Toggle - Only show for points rewards */}
+            {formData.rewardType === '积分' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.enableExtraRewards === 'true'}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        updateFormData('enableExtraRewards', e.target.checked.toString());
+                        // Reset extra reward points when disabled
+                        if (!e.target.checked) {
+                          updateFormData('extraRewardPoints', '0');
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium">开启额外奖励积分</span>
+                  </label>
+                </div>
+
+                {formData.enableExtraRewards && (
+                  <div className="space-y-2 ml-6">
+                    <label htmlFor="extraRewardPoints" className="text-sm font-medium">额外奖励积分</label>
+                    <Input
+                      id="extraRewardPoints"
+                      type="number"
+                      value={formData.extraRewardPoints}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('extraRewardPoints', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Task Rules */}
             <div className="space-y-4">
@@ -964,8 +1168,18 @@ export default function NewTaskPage(): React.ReactElement {
             <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-orange-800 mb-2">💰 预算与奖励说明</h4>
               <ul className="text-xs text-orange-700 space-y-1">
-                <li>• 积分预算应与任务总量相匹配，确保奖励资金充足</li>
-                <li>• 基础积分设置应考虑任务难度和工作量</li>
+                {formData.rewardType === '积分' && (
+                  <>
+                    <li>• 积分预算应与任务总量相匹配，确保奖励资金充足</li>
+                    <li>• 基础积分设置应考虑任务难度和工作量</li>
+                  </>
+                )}
+                {formData.rewardType !== '积分' && (
+                  <>
+                    <li>• {formData.rewardType}奖励设置将决定用户获得的相应权益</li>
+                    <li>• 请确保奖励库存充足，避免无法兑现</li>
+                  </>
+                )}
                 <li>• 声明内容将向用户展示，增强任务可信度</li>
               </ul>
             </div>
