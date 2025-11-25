@@ -80,13 +80,6 @@ function DesktopNav() {
         </NavItem>
 
         <NavItem
-          href="/tasks/rules"
-          label="任务规则"
-        >
-          <FileText className="h-5 w-5" />
-        </NavItem>
-
-        <NavItem
           href="/budget-sources"
           label="预算来源"
           submenu={[
@@ -139,13 +132,6 @@ function MobileNav() {
           >
             <CheckSquare className="h-5 w-5" />
             任务管理
-          </Link>
-          <Link
-            href="/tasks/rules"
-            className="flex items-center gap-4 px-2.5 text-foreground"
-          >
-            <FileText className="h-5 w-5" />
-            任务规则
           </Link>
           <Link
             href="/budget-sources"
