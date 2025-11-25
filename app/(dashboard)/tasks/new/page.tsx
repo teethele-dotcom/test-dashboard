@@ -214,7 +214,12 @@ export default function NewTaskPage(): React.ReactElement {
     cycle: '',
     startDate: '',
     endDate: '',
-    creator: '当前用户'
+    creator: '当前用户',
+
+    // Task Dependencies
+    prerequisiteTasks: [] as string[],
+    exclusiveTasks: [] as {taskId: string, mutexPeriod: string}[],
+    enableTaskDependencies: 'false'
   });
 
   const updateFormData = (field: string, value: string) => {
@@ -674,10 +679,10 @@ export default function NewTaskPage(): React.ReactElement {
                 </div>
               </div>
 
-              {/* Visibility Scope - Optional */}
+              {/* Task Visibility Scope - Streamlined */}
               <div className="space-y-2">
                 <label htmlFor="visibilityScope" className="text-sm font-medium">任务可见范围</label>
-                <div className="flex gap-4">
+                <div className="flex gap-6">
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -687,7 +692,7 @@ export default function NewTaskPage(): React.ReactElement {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('visibilityScope', e.target.value)}
                       className="mr-2"
                     />
-                    人群
+                    <span className="text-sm">人群</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -698,9 +703,12 @@ export default function NewTaskPage(): React.ReactElement {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('visibilityScope', e.target.value)}
                       className="mr-2"
                     />
-                    公司
+                    <span className="text-sm">公司</span>
                   </label>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 设置后端如启用任务依赖将进一步缩小可见范围（取交集逻辑）
+                </p>
               </div>
 
               {/* Task Rules */}
@@ -741,6 +749,214 @@ export default function NewTaskPage(): React.ReactElement {
               </div>
 
               {/* Task Material - Optional */}
+              {/* Task Dependencies Configuration */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">任务依赖配置</h3>
+                  <label className="flex items-center cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.enableTaskDependencies === 'true'}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('enableTaskDependencies', e.target.checked.toString())}
+                      className="mr-2 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">启用任务依赖</span>
+                  </label>
+                </div>
+                <p className="text-sm text-gray-600">
+                  💡 任务依赖用于控制任务执行顺序，确保用户按正确顺序完成任务
+                </p>
+
+                {formData.enableTaskDependencies === 'true' && (
+                  <div className="space-y-6">
+                    {/* Prerequisite Tasks */}
+                    <Card className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-bold">前</span>
+                          前序任务
+                        </CardTitle>
+                        <CardDescription>
+                          选择用户必须在此任务之前完成的其他任务，确保执行顺序正确
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex gap-2">
+                          <Input
+                            id="prerequisiteTaskId"
+                            placeholder="输入任务ID，例如：TASK-0000123"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-3 text-blue-600 hover:text-blue-800 hover:bg-blue-50 shrink-0"
+                            onClick={() => {
+                              // Add mock prerequisite task
+                              const taskId = `PREREQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+                              setFormData(prev => ({
+                                ...prev,
+                                prerequisiteTasks: [...prev.prerequisiteTasks, taskId]
+                              }));
+                            }}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        {/* Display Added Prerequisite Tasks */}
+                        {formData.prerequisiteTasks.length > 0 && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">已添加的前序任务</label>
+                            <div className="space-y-1">
+                              {formData.prerequisiteTasks.map((taskId, index) => (
+                                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-200">
+                                  <span className="text-sm text-gray-900">{taskId}</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 opacity-100"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        prerequisiteTasks: prev.prerequisiteTasks.filter((_, i) => i !== index)
+                                      }));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Exclusive Tasks */}
+                    <Card className="border-l-4 border-l-orange-500">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 text-orange-600 rounded-full text-sm font-bold">互</span>
+                          互斥任务
+                        </CardTitle>
+                        <CardDescription>
+                          选择不能同时执行的任务，用户只能在互斥任务之间选择其一
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            <Input
+                              id="exclusiveTaskId"
+                              placeholder="输入任务ID，例如：TASK-0000456"
+                              className="flex-1"
+                            />
+                            <select
+                              id="mutexPeriod"
+                              className="px-3 py-2 border rounded-md text-sm bg-background focus:ring-2 focus:ring-orange-500"
+                            >
+                              <option value="永久">永久</option>
+                              <option value="1天">1天</option>
+                              <option value="7天">7天</option>
+                              <option value="30天">30天</option>
+                              <option value="会话期">会话期</option>
+                            </select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-3 text-orange-600 hover:text-orange-800 hover:bg-orange-50 shrink-0"
+                              onClick={() => {
+                                // Add mock exclusive task with mutex period
+                                const taskId = `EXCL-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+                                const mutexPeriodElement = document.getElementById('mutexPeriod') as HTMLSelectElement;
+                                const mutexPeriod = mutexPeriodElement?.value || '永久';
+                                setFormData(prev => ({
+                                  ...prev,
+                                  exclusiveTasks: [...prev.exclusiveTasks, { taskId, mutexPeriod }]
+                                }));
+                              }}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Display Added Exclusive Tasks */}
+                        {formData.exclusiveTasks.length > 0 && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">已添加的互斥任务</label>
+                            <div className="space-y-1">
+                              {formData.exclusiveTasks.map((task, index) => (
+                                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-200">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-900">{task.taskId}</span>
+                                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                                      {task.mutexPeriod}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 opacity-100"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        exclusiveTasks: prev.exclusiveTasks.filter((_, i) => i !== index)
+                                      }));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Dependencies Summary */}
+                    {(formData.prerequisiteTasks.length > 0 || formData.exclusiveTasks.length > 0) && (
+                      <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2 text-green-800">
+                            📋 依赖配置摘要
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm text-green-700">
+                            {formData.prerequisiteTasks.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">前序任务:</span>
+                                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                  {formData.prerequisiteTasks.length} 个
+                                </span>
+                              </div>
+                            )}
+                            {formData.exclusiveTasks.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">互斥任务:</span>
+                                <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
+                                  {formData.exclusiveTasks.length} 个
+                                </span>
+                              </div>
+                            )}
+                            <div className="text-xs text-green-600 mt-2">
+                              用户完成此任务将受上述依赖关系约束，提供更精细的任务执行控制
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">任务素材</label>
                 {selectedMaterials.length > 0 && (
@@ -822,6 +1038,19 @@ export default function NewTaskPage(): React.ReactElement {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
+              {/* Task Total - Mandatory */}
+              <div className="space-y-2">
+                <label htmlFor="totalTasks" className="text-sm font-medium">任务总量 *</label>
+                <Input
+                  id="totalTasks"
+                  type="number"
+                  value={formData.totalTasks}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('totalTasks', e.target.value)}
+                  placeholder="请输入任务总数量"
+                  required
+                />
+              </div>
+
               {/* Reward Type - Mandatory */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">奖励内容 *</label>
@@ -860,19 +1089,6 @@ export default function NewTaskPage(): React.ReactElement {
                     商品
                   </label>
                 </div>
-              </div>
-
-              {/* Task Total - Mandatory */}
-              <div className="space-y-2">
-                <label htmlFor="totalTasks" className="text-sm font-medium">任务总量 *</label>
-                <Input
-                  id="totalTasks"
-                  type="number"
-                  value={formData.totalTasks}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('totalTasks', e.target.value)}
-                  placeholder="请输入任务总数量"
-                  required
-                />
               </div>
             </div>
 
@@ -1344,6 +1560,219 @@ export default function NewTaskPage(): React.ReactElement {
             </div>
           </div>
         );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            {/* Enable Task Dependencies Toggle */}
+            <div className="space-y-2">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.enableTaskDependencies === 'true'}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('enableTaskDependencies', e.target.checked.toString())}
+                  className="mr-2"
+                />
+                <span className="text-sm font-medium">启用任务依赖配置</span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                💡 任务依赖用于控制任务执行顺序，确保用户按正确顺序完成任务
+              </p>
+            </div>
+
+            {formData.enableTaskDependencies === 'true' && (
+              <>
+                {/* Prerequisite Tasks */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">前序任务</h3>
+                  <p className="text-sm text-muted-foreground">
+                    选择必须在此任务之前完成的其他任务，用户只有完成前序任务才能参与此任务
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="prerequisiteTaskId" className="text-sm font-medium">任务ID</label>
+                        <Input
+                          id="prerequisiteTaskId"
+                          placeholder="请输入前序任务ID"
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">&nbsp;</label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            // Add mock prerequisite task
+                            const taskId = `PREREQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+                            setFormData(prev => ({
+                              ...prev,
+                              prerequisiteTasks: [...prev.prerequisiteTasks, taskId]
+                            }));
+                          }}
+                        >
+                          添加前序任务
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Display Added Prerequisite Tasks */}
+                    {formData.prerequisiteTasks.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">已添加的前序任务</label>
+                        <div className="space-y-2">
+                          {formData.prerequisiteTasks.map((taskId, index) => (
+                            <div key={index} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <span className="text-sm font-medium text-blue-900">{taskId}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-800 h-6 px-2"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    prerequisiteTasks: prev.prerequisiteTasks.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Exclusive Tasks */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">互斥任务</h3>
+                  <p className="text-sm text-muted-foreground">
+                    选择不能同时执行的任务，用户只能在互斥任务和当前任务之间选择其一
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="exclusiveTaskId" className="text-sm font-medium">任务ID</label>
+                        <Input
+                          id="exclusiveTaskId"
+                          placeholder="请输入互斥任务ID"
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="mutexPeriod" className="text-sm font-medium">互斥周期</label>
+                        <select
+                          id="mutexPeriod"
+                          className="w-full px-3 py-2 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">选择互斥周期</option>
+                          <option value="永久">永久互斥</option>
+                          <option value="1天">1天互斥</option>
+                          <option value="7天">7天互斥</option>
+                          <option value="30天">30天互斥</option>
+                          <option value="会话期">会话期内互斥</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={() => {
+                        // Add mock exclusive task with mutex period
+                        const taskId = `EXCL-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+                        const mutexPeriod = document.getElementById('mutexPeriod')?.value || '永久';
+                        setFormData(prev => ({
+                          ...prev,
+                          exclusiveTasks: [...prev.exclusiveTasks, { taskId, mutexPeriod }]
+                        }));
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      添加互斥任务
+                    </Button>
+
+                    {/* Display Added Exclusive Tasks */}
+                    {formData.exclusiveTasks.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">已添加的互斥任务</label>
+                        <div className="space-y-2">
+                          {formData.exclusiveTasks.map((task, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-orange-900">{task.taskId}</span>
+                                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                  {task.mutexPeriod}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-orange-600 hover:text-orange-800 h-6 px-2"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    exclusiveTasks: prev.exclusiveTasks.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dependencies Summary */}
+                {formData.prerequisiteTasks.length > 0 || formData.exclusiveTasks.length > 0 ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2">📋 依赖配置摘要</h4>
+                    <div className="text-xs text-green-700 space-y-1">
+                      {formData.prerequisiteTasks.length > 0 && (
+                        <div>• 前序任务: {formData.prerequisiteTasks.length} 个</div>
+                      )}
+                      {formData.exclusiveTasks.length > 0 && (
+                        <div>• 互斥任务: {formData.exclusiveTasks.length} 个</div>
+                      )}
+                      <div>• 用户完成此任务将受上述依赖关系约束</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">ℹ️ 无依赖配置</h4>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div>• 当前任务没有配置任何前序或互斥关系</div>
+                      <div>• 用户可以自由参与，不受其他任务状态影响</div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Help Information */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 任务依赖说明</h4>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• <strong>前序任务：</strong>用户必须先完成指定的前序任务才能参与当前任务</li>
+                <li>• <strong>互斥任务：</strong>用户只能在指定任务和当前任务之间选择其一执行</li>
+                <li>• <strong>互斥周期：</strong>定义任务互斥的有效时间范围</li>
+                <li>• 合理设置任务依赖可以改善用户体验，避免任务冲突</li>
+              </ul>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -1398,6 +1827,7 @@ export default function NewTaskPage(): React.ReactElement {
                 {currentStep === 0 && "填写任务的基本信息，让用户了解任务内容"}
                 {currentStep === 1 && "设置预算、奖励配置和任务规则"}
                 {currentStep === 2 && "配置审核要求和内容标准"}
+                {currentStep === 3 && "配置任务依赖关系，确保执行顺序和互斥要求"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pb-44">

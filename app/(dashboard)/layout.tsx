@@ -9,7 +9,8 @@ import {
   ShoppingCart,
   Users2,
   CheckSquare,
-  FileText
+  FileText,
+  DollarSign
 } from 'lucide-react';
 
 import {
@@ -88,6 +89,10 @@ function DesktopNav() {
         <NavItem
           href="/budget-sources"
           label="预算来源"
+          submenu={[
+            { href: "/budget-sources", label: "预算来源管理", icon: <Settings className="h-4 w-4" /> },
+            { href: "/budget-sources/consumption", label: "消耗明细", icon: <DollarSign className="h-4 w-4" /> }
+          ]}
         >
           <Settings className="h-5 w-5" />
         </NavItem>
