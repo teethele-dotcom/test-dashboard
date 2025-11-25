@@ -1689,7 +1689,8 @@ export default function NewTaskPage(): React.ReactElement {
                       onClick={() => {
                         // Add mock exclusive task with mutex period
                         const taskId = `EXCL-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-                        const mutexPeriod = document.getElementById('mutexPeriod')?.value || '永久';
+                        const mutexPeriodElement = document.getElementById('mutexPeriod') as HTMLSelectElement;
+                        const mutexPeriod = mutexPeriodElement?.value || '永久';
                         setFormData(prev => ({
                           ...prev,
                           exclusiveTasks: [...prev.exclusiveTasks, { taskId, mutexPeriod }]
